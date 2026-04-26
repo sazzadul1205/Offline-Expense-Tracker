@@ -135,18 +135,46 @@ export default function AddTransaction() {
     });
   };
 
-  // Transaction type buttons
+  // Transaction type buttons - FIXED with complete classes
   const typeButtons = [
-    { id: 'expense', label: 'Expense', icon: FiArrowDownCircle, color: 'red', bgColor: 'bg-red-50', activeBg: 'bg-red-500' },
-    { id: 'income', label: 'Income', icon: FiArrowUpCircle, color: 'green', bgColor: 'bg-green-50', activeBg: 'bg-green-500' },
-    { id: 'transfer', label: 'Transfer', icon: FiRepeat, color: 'blue', bgColor: 'bg-blue-50', activeBg: 'bg-blue-500' },
-    { id: 'credit', label: 'Credit', icon: FiCreditCard, color: 'purple', bgColor: 'bg-purple-50', activeBg: 'bg-purple-500' }
+    {
+      id: 'expense',
+      label: 'Expense',
+      icon: FiArrowDownCircle,
+      activeClass: 'bg-red-500 text-white shadow-md scale-95',
+      inactiveClass: 'bg-red-50 text-gray-700 hover:scale-105',
+      iconColor: 'text-red-500'
+    },
+    {
+      id: 'income',
+      label: 'Income',
+      icon: FiArrowUpCircle,
+      activeClass: 'bg-green-500 text-white shadow-md scale-95',
+      inactiveClass: 'bg-green-50 text-gray-700 hover:scale-105',
+      iconColor: 'text-green-500'
+    },
+    {
+      id: 'transfer',
+      label: 'Transfer',
+      icon: FiRepeat,
+      activeClass: 'bg-blue-500 text-white shadow-md scale-95',
+      inactiveClass: 'bg-blue-50 text-gray-700 hover:scale-105',
+      iconColor: 'text-blue-500'
+    },
+    {
+      id: 'credit',
+      label: 'Credit',
+      icon: FiCreditCard,
+      activeClass: 'bg-purple-500 text-white shadow-md scale-95',
+      inactiveClass: 'bg-purple-50 text-gray-700 hover:scale-105',
+      iconColor: 'text-purple-500'
+    }
   ];
 
   return (
     <div className="pb-4">
       <form onSubmit={handleSubmit} className="space-y-5">
-        {/* Transaction Type Selector */}
+        {/* Transaction Type Selector - FIXED */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
           <label className="block text-gray-700 font-semibold mb-3 text-sm">Transaction Type</label>
           <div className="grid grid-cols-4 gap-2">
@@ -158,12 +186,10 @@ export default function AddTransaction() {
                   key={type.id}
                   type="button"
                   onClick={() => setFormData({ ...formData, type: type.id })}
-                  className={`flex flex-col items-center gap-1 py-3 px-2 rounded-xl transition-all duration-200 ${isActive
-                    ? `${type.activeBg} text-white shadow-md scale-95`
-                    : `${type.bgColor} text-gray-700 hover:scale-105`
+                  className={`flex flex-col items-center gap-1 py-3 px-2 rounded-xl transition-all duration-200 ${isActive ? type.activeClass : type.inactiveClass
                     }`}
                 >
-                  <Icon size={20} className={isActive ? 'text-white' : `text-${type.color}-500`} />
+                  <Icon size={20} className={isActive ? 'text-white' : type.iconColor} />
                   <span className="text-xs font-medium capitalize">{type.label}</span>
                 </button>
               );
@@ -360,8 +386,8 @@ export default function AddTransaction() {
           type="submit"
           disabled={isSubmitting}
           className={`w-full py-3.5 rounded-xl font-semibold text-white transition-all duration-200 flex items-center justify-center gap-2 ${isSubmitting
-            ? 'bg-gray-400 cursor-not-allowed'
-            : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:shadow-lg active:scale-98'
+              ? 'bg-gray-400 cursor-not-allowed'
+              : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:shadow-lg active:scale-98'
             }`}
         >
           {isSubmitting ? (

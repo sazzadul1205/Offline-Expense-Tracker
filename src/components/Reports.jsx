@@ -227,23 +227,64 @@ export default function Reports() {
             <div className="space-y-4">
               {reportData.categoryBreakdown.map((cat, index) => {
                 const percentage = (cat.amount / reportData.totalExpenses) * 100;
-                const colors = ['blue', 'purple', 'pink', 'orange', 'green', 'teal', 'indigo', 'yellow'];
-                const color = colors[index % colors.length];
+                // FIXED: Use switch statement instead of template literals
+                let bgColor, fromColor, toColor;
+                switch (index % 8) {
+                  case 0:
+                    bgColor = 'bg-blue-500';
+                    fromColor = 'from-blue-500';
+                    toColor = 'to-blue-600';
+                    break;
+                  case 1:
+                    bgColor = 'bg-purple-500';
+                    fromColor = 'from-purple-500';
+                    toColor = 'to-purple-600';
+                    break;
+                  case 2:
+                    bgColor = 'bg-pink-500';
+                    fromColor = 'from-pink-500';
+                    toColor = 'to-pink-600';
+                    break;
+                  case 3:
+                    bgColor = 'bg-orange-500';
+                    fromColor = 'from-orange-500';
+                    toColor = 'to-orange-600';
+                    break;
+                  case 4:
+                    bgColor = 'bg-green-500';
+                    fromColor = 'from-green-500';
+                    toColor = 'to-green-600';
+                    break;
+                  case 5:
+                    bgColor = 'bg-teal-500';
+                    fromColor = 'from-teal-500';
+                    toColor = 'to-teal-600';
+                    break;
+                  case 6:
+                    bgColor = 'bg-indigo-500';
+                    fromColor = 'from-indigo-500';
+                    toColor = 'to-indigo-600';
+                    break;
+                  default:
+                    bgColor = 'bg-yellow-500';
+                    fromColor = 'from-yellow-500';
+                    toColor = 'to-yellow-600';
+                }
 
                 return (
                   <div key={cat.name} className="space-y-1">
                     <div className="flex justify-between text-sm">
                       <div className="flex items-center gap-2">
-                        <div className={`w-3 h-3 rounded-full bg-${color}-500`} />
+                        <div className={`w-3 h-3 rounded-full ${bgColor}`} />
                         <span className="text-gray-700 font-medium">{cat.name}</span>
                       </div>
                       <div className="text-gray-600">
-                        ${formatCurrency(cat.amount)} <span className="text-gray-400">({percentage.toFixed(1)}%)</span>
+                        {formatCurrency(cat.amount)} <span className="text-gray-400">({percentage.toFixed(1)}%)</span>
                       </div>
                     </div>
                     <div className="bg-gray-100 rounded-full h-2 overflow-hidden">
                       <div
-                        className={`bg-gradient-to-r from-${color}-500 to-${color}-600 rounded-full h-2 transition-all duration-500`}
+                        className={`bg-gradient-to-r ${fromColor} ${toColor} rounded-full h-2 transition-all duration-500`}
                         style={{ width: `${percentage}%` }}
                       />
                     </div>

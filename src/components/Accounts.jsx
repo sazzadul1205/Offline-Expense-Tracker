@@ -83,8 +83,8 @@ export default function Accounts() {
     return icons[type] || <MdAccountBalanceWallet size={24} />;
   };
 
-  // Get account type color
-  const getTypeColor = (type) => {
+  // Get account type color - FIXED with complete classes
+  const getTypeColorClass = (type) => {
     const colors = {
       cash: 'bg-emerald-100 text-emerald-700',
       bkash: 'bg-pink-100 text-pink-700',
@@ -94,8 +94,8 @@ export default function Accounts() {
     return colors[type] || 'bg-gray-100 text-gray-700';
   };
 
-  // Get account type gradient
-  const getTypeGradient = (type) => {
+  // Get account type gradient - FIXED with complete classes
+  const getTypeGradientClass = (type) => {
     const gradients = {
       cash: 'from-emerald-500 to-emerald-600',
       bkash: 'from-pink-500 to-pink-600',
@@ -105,12 +105,12 @@ export default function Accounts() {
     return gradients[type] || 'from-gray-500 to-gray-600';
   };
 
-  // Account types
+  // Account types with complete classes - FIXED
   const accountTypes = [
-    { id: 'cash', label: 'Cash', icon: MdAccountBalanceWallet, color: 'emerald' },
-    { id: 'bkash', label: 'bKash', icon: FiPhone, color: 'pink' },
-    { id: 'card', label: 'Card', icon: FiCreditCard, color: 'blue' },
-    { id: 'bank', label: 'Bank', icon: MdAccountBalance, color: 'purple' }
+    { id: 'cash', label: 'Cash', icon: MdAccountBalanceWallet, activeClass: 'bg-emerald-500 text-white shadow-md scale-95', inactiveClass: 'bg-gray-100 text-gray-600 hover:scale-105', iconColor: 'text-emerald-600' },
+    { id: 'bkash', label: 'bKash', icon: FiPhone, activeClass: 'bg-pink-500 text-white shadow-md scale-95', inactiveClass: 'bg-gray-100 text-gray-600 hover:scale-105', iconColor: 'text-pink-600' },
+    { id: 'card', label: 'Card', icon: FiCreditCard, activeClass: 'bg-blue-500 text-white shadow-md scale-95', inactiveClass: 'bg-gray-100 text-gray-600 hover:scale-105', iconColor: 'text-blue-600' },
+    { id: 'bank', label: 'Bank', icon: MdAccountBalance, activeClass: 'bg-purple-500 text-white shadow-md scale-95', inactiveClass: 'bg-gray-100 text-gray-600 hover:scale-105', iconColor: 'text-purple-600' }
   ];
 
   return (
@@ -138,7 +138,7 @@ export default function Accounts() {
         {showForm ? 'Cancel' : 'Add New Account'}
       </button>
 
-      {/* Add Account Form */}
+      {/* Add Account Form - FIXED button mapping */}
       {showForm && (
         <div className="bg-white rounded-2xl shadow-lg p-5 animate-fade-in">
           <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
@@ -163,12 +163,10 @@ export default function Accounts() {
                   key={type.id}
                   type="button"
                   onClick={() => setNewAccount({ ...newAccount, type: type.id })}
-                  className={`flex flex-col items-center gap-1 py-2 rounded-xl transition-all ${isSelected
-                    ? `bg-${type.color}-500 text-white shadow-md scale-95`
-                    : `bg-gray-100 text-gray-600 hover:scale-105`
+                  className={`flex flex-col items-center gap-1 py-2 rounded-xl transition-all ${isSelected ? type.activeClass : type.inactiveClass
                     }`}
                 >
-                  <Icon size={18} />
+                  <Icon size={18} className={isSelected ? 'text-white' : type.iconColor} />
                   <span className="text-xs">{type.label}</span>
                 </button>
               );
@@ -201,53 +199,51 @@ export default function Accounts() {
         </div>
       )}
 
-      {/* Accounts List */}
-      <div className="space-y-3">
-        {accounts.map(acc => {
-          const Icon = getTypeIcon(acc.type);
-          const gradient = getTypeGradient(acc.type);
-          const typeColor = getTypeColor(acc.type);
+      {/* Accounts List - FIXED with static classes */}
+      {accounts.map(acc => {
+        const Icon = getTypeIcon(acc.type);
+        const gradientClass = getTypeGradientClass(acc.type);
+        const typeColorClass = getTypeColorClass(acc.type);
 
-          return (
-            <div
-              key={acc.id}
-              className="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-lg transition-shadow"
-            >
-              <div className={`bg-gradient-to-r ${gradient} p-1`} />
-              <div className="p-4">
-                <div className="flex justify-between items-start">
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2.5 rounded-xl ${typeColor}`}>
-                      {Icon}
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-800 text-lg">{acc.name}</h3>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${typeColor} mt-1 inline-block`}>
-                        {acc.type.toUpperCase()}
-                      </span>
-                    </div>
+        return (
+          <div
+            key={acc.id}
+            className="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+          >
+            <div className={`bg-gradient-to-r ${gradientClass} p-1`} />
+            <div className="p-4">
+              <div className="flex justify-between items-start">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2.5 rounded-xl ${typeColorClass}`}>
+                    {Icon}
                   </div>
-                  <button
-                    onClick={() => handleDeleteAccount(acc.id)}
-                    className="text-red-400 hover:text-red-600 p-2 hover:bg-red-50 rounded-full transition-colors"
-                  >
-                    <FiTrash2 size={18} />
-                  </button>
+                  <div>
+                    <h3 className="font-semibold text-gray-800 text-lg">{acc.name}</h3>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${typeColorClass} mt-1 inline-block`}>
+                      {acc.type.toUpperCase()}
+                    </span>
+                  </div>
                 </div>
+                <button
+                  onClick={() => handleDeleteAccount(acc.id)}
+                  className="text-red-400 hover:text-red-600 p-2 hover:bg-red-50 rounded-full transition-colors"
+                >
+                  <FiTrash2 size={18} />
+                </button>
+              </div>
 
-                <div className="mt-3 pt-3 border-t border-gray-100">
-                  <div className="flex justify-between items-center">
-                    <div className="text-xs text-gray-500">Current Balance</div>
-                    <div className="text-2xl font-bold text-gray-800">
-                      {formatCurrency(acc.balance)}
-                    </div>
+              <div className="mt-3 pt-3 border-t border-gray-100">
+                <div className="flex justify-between items-center">
+                  <div className="text-xs text-gray-500">Current Balance</div>
+                  <div className="text-2xl font-bold text-gray-800">
+                    {formatCurrency(acc.balance)}
                   </div>
                 </div>
               </div>
             </div>
-          );
-        })}
-      </div>
+          </div>
+        );
+      })}
 
       {/* Empty State */}
       {accounts.length === 0 && !showForm && (
