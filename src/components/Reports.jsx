@@ -6,6 +6,9 @@ import { useState, useEffect } from 'react';
 // Database
 import { db } from '../db/database';
 
+// Utils
+import { formatCurrency } from '../utils/currency';
+
 // Icons
 import { MdShowChart, MdInsights } from 'react-icons/md';
 import { FiCalendar, FiTrendingDown, FiTrendingUp, FiPieChart, FiBarChart2, FiAlertCircle, FiCheckCircle, FiDollarSign, FiArrowUp, FiArrowDown, FiActivity } from 'react-icons/fi';
@@ -103,14 +106,6 @@ export default function Reports() {
   const getPeriodLabel = () => {
     const labels = { week: 'Last 7 Days', month: 'Last 30 Days', year: 'Last 12 Months' };
     return labels[period];
-  };
-
-  // Format currency
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(amount);
   };
 
   // Period options

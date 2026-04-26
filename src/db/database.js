@@ -4,7 +4,7 @@ export const db = new Dexie("ExpenseTrackerDB");
 
 // Version 2 - Added timestamp and time fields
 db.version(2).stores({
-  accounts: "++id, name, type, balance",
+  accounts: "++id, name, type, balance, currency",
   categories: "++id, name, type",
   transactions: `
     ++id,
@@ -62,25 +62,35 @@ export const TRANSACTION_TYPES = [
 ];
 export const STATUSES = ["pending", "paid"];
 export const DIRECTIONS = ["owe_me", "i_owe"];
+export const CURRENCY = "BDT";
+export const CURRENCY_SYMBOL = "৳";
 
 export async function initSampleData() {
   const accountCount = await db.accounts.count();
   if (accountCount === 0) {
     await db.accounts.bulkAdd([
-      { name: "Cash", type: "cash", balance: 0 },
-      { name: "bKash", type: "bkash", balance: 0 },
-      { name: "Credit Card", type: "card", balance: 0 },
+      { name: "Cash", type: "cash", balance: 0, currency: CURRENCY },
+      { name: "bKash", type: "bkash", balance: 0, currency: CURRENCY },
+      { name: "Credit Card", type: "card", balance: 0, currency: CURRENCY },
+      { name: "Bank Account", type: "bank", balance: 0, currency: CURRENCY },
     ]);
   }
 
   const categoryCount = await db.categories.count();
   if (categoryCount === 0) {
     await db.categories.bulkAdd([
-      { name: "Food", type: "expense" },
+      { name: "Food & Dining", type: "expense" },
       { name: "Transport", type: "expense" },
       { name: "Salary", type: "income" },
       { name: "Shopping", type: "expense" },
       { name: "Utilities", type: "expense" },
+      { name: "Rent", type: "expense" },
+      { name: "Entertainment", type: "expense" },
+      { name: "Healthcare", type: "expense" },
+      { name: "Education", type: "expense" },
+      { name: "Freelance", type: "income" },
+      { name: "Business", type: "income" },
+      { name: "Investment", type: "income" },
     ]);
   }
 }
@@ -117,9 +127,18 @@ export async function migrateExistingTransactions() {
       }
     }
 
+    // Migrate accounts to add currency field
+    const accounts = await db.accounts.toArray();
+    for (const account of accounts) {
+      if (!account.currency) {
+        await db.accounts.update(account.id, { currency: CURRENCY });
+        needsUpdate = true;
+      }
+    }
+
     if (needsUpdate) {
       console.log(
-        "Migration completed: Added timestamps to existing transactions",
+        "Migration completed: Added timestamps and currency to existing data",
       );
     }
   } catch (error) {

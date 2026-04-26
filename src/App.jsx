@@ -51,7 +51,7 @@ function App() {
               Expense Tracker
             </h1>
             <p className="text-xs text-blue-100 mt-0.5 opacity-90">
-              Offline · Secure · Personal
+              Offline · Secure · Personal · ৳ BDT
             </p>
           </div>
         </header>

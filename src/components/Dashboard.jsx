@@ -11,6 +11,9 @@ import { TfiWallet } from "react-icons/tfi";
 import { MdOutlinePendingActions } from 'react-icons/md';
 import { FiTrendingDown, FiTrendingUp, FiAlertCircle, FiArrowDown, FiArrowUp, FiRepeat, FiCreditCard, FiClock } from 'react-icons/fi';
 
+// Utils
+import { formatCurrency } from '../utils/currency';
+
 export default function Dashboard() {
 
   // State
@@ -85,14 +88,6 @@ export default function Dashboard() {
     return colors[type] || 'text-gray-600';
   };
 
-  // Format Currency
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(amount);
-  };
-
   return (
     <div className="space-y-4">
       {/* Stats Grid */}
@@ -103,7 +98,7 @@ export default function Dashboard() {
             <TfiWallet size={20} className="opacity-80" />
             <span className="text-xs opacity-80">Balance</span>
           </div>
-          <div className="text-2xl font-bold">${formatCurrency(stats.totalBalance)}</div>
+          <div className="text-2xl font-bold">{formatCurrency(stats.totalBalance)}</div>
           <div className="text-xs mt-1 opacity-75">Total across all accounts</div>
         </div>
 
@@ -113,7 +108,7 @@ export default function Dashboard() {
             <MdOutlinePendingActions size={20} className="opacity-80" />
             <span className="text-xs opacity-80">Pending</span>
           </div>
-          <div className="text-2xl font-bold">${formatCurrency(stats.pendingDebt)}</div>
+          <div className="text-2xl font-bold">{formatCurrency(stats.pendingDebt)}</div>
           <div className="text-xs mt-1 opacity-75">Active debts</div>
         </div>
 
@@ -125,7 +120,7 @@ export default function Dashboard() {
             </div>
             <span className="text-xs text-gray-500">Expenses</span>
           </div>
-          <div className="text-xl font-bold text-red-600">${formatCurrency(stats.totalExpenses)}</div>
+          <div className="text-xl font-bold text-red-600">{formatCurrency(stats.totalExpenses)}</div>
           <div className="text-xs text-gray-400 mt-1">Total spent</div>
         </div>
 
@@ -137,7 +132,7 @@ export default function Dashboard() {
             </div>
             <span className="text-xs text-gray-500">Income</span>
           </div>
-          <div className="text-xl font-bold text-green-600">${formatCurrency(stats.totalIncome)}</div>
+          <div className="text-xl font-bold text-green-600">{formatCurrency(stats.totalIncome)}</div>
           <div className="text-xs text-gray-400 mt-1">Total earned</div>
         </div>
       </div>
@@ -157,7 +152,7 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="text-xs text-emerald-600 mt-2">
-            You've saved ${formatCurrency(stats.totalIncome - stats.totalExpenses)} this period
+            You've saved {formatCurrency(stats.totalIncome - stats.totalExpenses)} this period
           </div>
         </div>
       )}
@@ -197,7 +192,7 @@ export default function Dashboard() {
                 </div>
                 <div className={`font-semibold ${getTransactionColor(t.type)} ml-2`}>
                   {t.type === 'expense' ? '-' : t.type === 'income' ? '+' : ''}
-                  ${formatCurrency(t.amount)}
+                  {formatCurrency(t.amount)}
                 </div>
               </div>
             </div>

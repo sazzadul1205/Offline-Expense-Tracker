@@ -6,6 +6,9 @@ import { useState, useEffect } from 'react';
 // Database
 import { db } from '../db/database';
 
+// Utils
+import { formatCurrency } from '../utils/currency';
+
 // Icons
 import { MdOutlinePendingActions, MdAccountBalance } from 'react-icons/md';
 import { FiUsers, FiUserCheck, FiUserX, FiDollarSign, FiCheckCircle, FiAlertCircle, FiClock, FiTrendingUp, FiTrendingDown, FiSmile, FiFrown } from 'react-icons/fi';
@@ -105,14 +108,6 @@ export default function DebtTracker() {
   const totalOweMe = debts.oweMe.reduce((sum, d) => sum + d.amount, 0);
   const totalIOwe = debts.iOwe.reduce((sum, d) => sum + d.amount, 0);
   const netBalance = totalOweMe - totalIOwe;
-
-  // Format currency
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(amount);
-  };
 
   return (
     <div className="space-y-4 pb-4">

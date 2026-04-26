@@ -10,6 +10,9 @@ import { db } from '../db/database';
 import { MdAccountBalance, MdSavings, MdAccountBalanceWallet } from 'react-icons/md';
 import { FiPlus, FiTrash2, FiPhone, FiCreditCard, FiHome, FiDollarSign, FiAlertCircle, FiX } from 'react-icons/fi';
 
+// Utils
+import { formatCurrency, CURRENCY_SYMBOL } from '../utils/currency';
+
 export default function Accounts() {
 
   // State
@@ -98,14 +101,6 @@ export default function Accounts() {
     return gradients[type] || 'from-gray-500 to-gray-600';
   };
 
-  // Format currency
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(amount);
-  };
-
   // Account types
   const accountTypes = [
     { id: 'cash', label: 'Cash', icon: MdAccountBalanceWallet, color: 'emerald' },
@@ -124,7 +119,7 @@ export default function Accounts() {
             <FiDollarSign size={20} />
           </div>
         </div>
-        <div className="text-3xl font-bold">${formatCurrency(totalBalance)}</div>
+        <div className="text-3xl font-bold">{formatCurrency(totalBalance)}</div>
         <div className="text-xs mt-2 opacity-75">
           Across {accounts.length} account{accounts.length !== 1 ? 's' : ''}
         </div>
@@ -178,8 +173,8 @@ export default function Accounts() {
 
           <input
             type="number"
-            step="0.01"
-            placeholder="Initial balance"
+            step="1"
+            placeholder="Initial balance (BDT)"
             value={newAccount.balance}
             onChange={(e) => setNewAccount({ ...newAccount, balance: parseFloat(e.target.value) || 0 })}
             className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 mb-3 focus:border-blue-500 focus:outline-none"
@@ -240,7 +235,7 @@ export default function Accounts() {
                   <div className="flex justify-between items-center">
                     <div className="text-xs text-gray-500">Current Balance</div>
                     <div className="text-2xl font-bold text-gray-800">
-                      ${formatCurrency(acc.balance)}
+                      {formatCurrency(acc.balance)}
                     </div>
                   </div>
                 </div>
