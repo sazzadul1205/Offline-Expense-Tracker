@@ -1,7 +1,7 @@
 {
   "name": "offline-expense-tracker",
   "version": "4.0.0",
-  "type": "module", 
+  "type": "module",
   "private": true,
   "dependencies": {
     "crypto-js": "^4.2.0",
@@ -20,7 +20,7 @@
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.16",
     "postcss": "^8.4.32",
-    "vite": "^8.0.10",
+    "vite": "^7.3.2",
     "vite-plugin-pwa": "^0.19.8",
     "workbox-window": "^7.3.0"
   },
