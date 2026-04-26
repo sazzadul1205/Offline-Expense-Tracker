@@ -12,6 +12,7 @@ import { FiPlus, FiTrash2, FiPhone, FiCreditCard, FiHome, FiDollarSign, FiAlertC
 
 // Utils
 import { formatCurrency, CURRENCY_SYMBOL } from '../utils/currency';
+import { showErrorAlert, showToast, showConfirmAlert } from '../utils/alerts';
 
 export default function Accounts() {
 
@@ -28,22 +29,23 @@ export default function Accounts() {
 
   // Load accounts
   const loadAccounts = async () => {
-    const accs = await db.accounts.toArray();
-    setAccounts(accs);
-    const total = accs.reduce((sum, acc) => sum + acc.balance, 0);
+    const acs = await db.accounts.toArray();
+    setAccounts(acs);
+    const total = acs.reduce((sum, acc) => sum + acc.balance, 0);
     setTotalBalance(total);
   };
 
   // Add account
   const handleAddAccount = async () => {
     if (!newAccount.name.trim()) {
-      alert('Please enter account name');
+      showErrorAlert('Validation Error', 'Please enter account name');
       return;
     }
     await db.accounts.add(newAccount);
     setNewAccount({ name: '', type: 'cash', balance: 0 });
     setShowForm(false);
-    loadAccounts();
+    await loadAccounts();
+    showToast('Account added successfully!', 'success');
   };
 
   // Delete account
@@ -58,13 +60,15 @@ export default function Accounts() {
       .count();
 
     if (hasTransactions > 0) {
-      alert('Cannot delete account with transaction history');
+      showErrorAlert('Cannot Delete', 'Cannot delete account with transaction history');
       return;
     }
 
-    if (confirm('Delete this account?')) {
+    const confirmed = await showConfirmAlert('Delete Account', 'Are you sure you want to delete this account?', 'Delete', 'Cancel');
+    if (confirmed) {
       await db.accounts.delete(id);
-      loadAccounts();
+      await loadAccounts();
+      showToast('Account deleted successfully', 'success');
     }
   };
 

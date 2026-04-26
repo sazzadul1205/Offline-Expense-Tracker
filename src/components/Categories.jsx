@@ -10,6 +10,9 @@ import { db } from '../db/database';
 import { MdCategory, MdOutlineLocalOffer } from 'react-icons/md';
 import { FiPlus, FiTrash2, FiTag, FiTrendingDown, FiTrendingUp, FiX, FiCheck, FiFolder } from 'react-icons/fi';
 
+// Utils
+import { showErrorAlert, showToast, showConfirmAlert } from '../utils/alerts';
+
 export default function Categories() {
 
   // State
@@ -38,13 +41,14 @@ export default function Categories() {
   // Add category
   const handleAddCategory = async () => {
     if (!newCategory.name.trim()) {
-      alert('Please enter category name');
+      showErrorAlert('Validation Error', 'Please enter category name');
       return;
     }
     await db.categories.add(newCategory);
     setNewCategory({ name: '', type: 'expense' });
     setShowForm(false);
-    loadCategories();
+    await loadCategories();
+    showToast('Category added successfully!', 'success');
   };
 
   // Delete category
@@ -52,13 +56,15 @@ export default function Categories() {
     const hasTransactions = await db.transactions.where('categoryId').equals(id).count();
 
     if (hasTransactions > 0) {
-      alert('Cannot delete category with transaction history');
+      showErrorAlert('Cannot Delete', 'Cannot delete category with transaction history');
       return;
     }
 
-    if (confirm('Delete this category?')) {
+    const confirmed = await showConfirmAlert('Delete Category', 'Are you sure you want to delete this category?', 'Delete', 'Cancel');
+    if (confirmed) {
       await db.categories.delete(id);
-      loadCategories();
+      await loadCategories();
+      showToast('Category deleted successfully', 'success');
     }
   };
 

@@ -9,6 +9,8 @@ import { db } from '../db/database';
 // Utils
 import { applyTransaction } from '../utils/accountingRules';
 import { formatCurrency, CURRENCY_SYMBOL } from '../utils/currency';
+import { showToast, showErrorAlert, showLoadingAlert, closeLoadingAlert } from '../utils/alerts';
+import { logError, ERROR_CATEGORIES, ERROR_LEVELS } from '../utils/errorLogger';
 
 // Icons
 import { MdOutlinePersonAdd, MdOutlineNotes } from 'react-icons/md';
@@ -46,48 +48,71 @@ export default function AddTransaction() {
 
   // Load data from IndexedDB
   const loadData = async () => {
-    const accountsList = await db.accounts.toArray();
-    const categoriesList = await db.categories.toArray();
-    setAccounts(accountsList);
-    setCategories(categoriesList);
-    if (accountsList[0]) setFormData(prev => ({ ...prev, accountId: accountsList[0].id }));
+    try {
+      const accountsList = await db.accounts.toArray();
+      const categoriesList = await db.categories.toArray();
+      setAccounts(accountsList);
+      setCategories(categoriesList);
+      if (accountsList[0]) setFormData(prev => ({ ...prev, accountId: accountsList[0].id }));
+    } catch (error) {
+      console.error('Failed to load data:', error);
+      await logError(error, ERROR_CATEGORIES.DATABASE, ERROR_LEVELS.ERROR, { action: 'loadData' });
+      showErrorAlert('Loading Error', 'Failed to load accounts and categories. Please refresh the page.');
+    }
   };
 
   // Form handlers
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!formData.amount || parseFloat(formData.amount) <= 0) {
+      showErrorAlert('Validation Error', 'Please enter a valid amount');
+      return;
+    }
+
     setIsSubmitting(true);
+    showLoadingAlert('Processing', 'Adding your transaction...');
 
-    const dateTime = new Date(`${formData.date}T${formData.time}`);
-    const timestamp = dateTime.getTime();
+    try {
+      const dateTime = new Date(`${formData.date}T${formData.time}`);
+      const timestamp = dateTime.getTime();
 
-    const transaction = {
-      ...formData,
-      amount: parseFloat(formData.amount),
-      fee: formData.fee ? parseFloat(formData.fee) : 0,
-      date: formData.date,
-      time: formData.time,
-      timestamp: timestamp,
-      type: formData.type
-    };
+      const transaction = {
+        ...formData,
+        amount: parseFloat(formData.amount),
+        fee: formData.fee ? parseFloat(formData.fee) : 0,
+        date: formData.date,
+        time: formData.time,
+        timestamp: timestamp,
+        type: formData.type
+      };
 
-    if (transaction.type === 'credit') {
-      transaction.status = 'pending';
+      if (transaction.type === 'credit') {
+        transaction.status = 'pending';
+      }
+
+      const txId = await db.transactions.add(transaction);
+      transaction.id = txId;
+
+      const result = await applyTransaction(transaction, true);
+
+      closeLoadingAlert();
+
+      if (result.success) {
+        showToast('Transaction added successfully!', 'success');
+        resetForm();
+      } else {
+        await db.transactions.delete(txId);
+        showErrorAlert('Transaction Failed', result.message);
+      }
+    } catch (error) {
+      closeLoadingAlert();
+      console.error('Transaction error:', error);
+      await logError(error, ERROR_CATEGORIES.TRANSACTION, ERROR_LEVELS.ERROR, { formData });
+      showErrorAlert('Error', 'Failed to add transaction. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
-
-    const txId = await db.transactions.add(transaction);
-    transaction.id = txId;
-
-    const result = await applyTransaction(transaction, true);
-
-    if (result.success) {
-      alert('✓ Transaction added successfully!');
-      resetForm();
-    } else {
-      await db.transactions.delete(txId);
-      alert(`✗ Error: ${result.message}`);
-    }
-    setIsSubmitting(false);
   };
 
   // Reset form

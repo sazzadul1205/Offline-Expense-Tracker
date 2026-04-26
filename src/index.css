@@ -47,3 +47,26 @@
 .animate-spin {
   animation: spin 1s linear infinite;
 }
+
+.safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Better touch targets */
+button,
+[role="button"],
+input,
+select,
+textarea {
+  touch-action: manipulation;
+}
+
+/* Disable pull-to-refresh on overscroll */
+body {
+  overscroll-behavior-y: none;
+}

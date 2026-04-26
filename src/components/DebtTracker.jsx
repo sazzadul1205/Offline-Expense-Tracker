@@ -8,6 +8,7 @@ import { db } from '../db/database';
 
 // Utils
 import { formatCurrency } from '../utils/currency';
+import { showErrorAlert, showToast } from '../utils/alerts';
 
 // Icons
 import { MdOutlinePendingActions, MdAccountBalance } from 'react-icons/md';
@@ -73,7 +74,7 @@ export default function DebtTracker() {
     );
 
     if (!relatedTx) {
-      alert('No matching credit found');
+      showErrorAlert('Error', 'No matching credit found');
       setIsSettling(false);
       return;
     }
@@ -92,15 +93,15 @@ export default function DebtTracker() {
       direction: direction,
       settlesTransactionId: relatedTx.id,
       title: `Debt settlement for ${person}`,
-      details: `Settled ${direction === 'owe_me' ? 'they owed' : 'I owed'} $${amount.toFixed(2)}`,
+      details: `Settled ${direction === 'owe_me' ? 'they owed' : 'I owed'} ${formatCurrency(amount)}`,
       accountId: defaultAccount
     };
 
     await db.transactions.add(settlement);
     await db.transactions.update(relatedTx.id, { status: 'paid' });
 
-    alert('✓ Debt settled successfully!');
-    loadDebts();
+    showToast('Debt settled successfully!', 'success');
+    await loadDebts();
     setIsSettling(false);
   };
 
@@ -118,7 +119,7 @@ export default function DebtTracker() {
             <FiUserCheck size={22} className="opacity-90" />
             <FiTrendingUp size={16} className="opacity-70" />
           </div>
-          <div className="text-2xl font-bold">${formatCurrency(totalOweMe)}</div>
+          <div className="text-2xl font-bold">{formatCurrency(totalOweMe)}</div>
           <div className="text-xs mt-1 opacity-90">They owe me</div>
           <div className="text-xs opacity-75 mt-1">{debts.oweMe.length} person(s)</div>
         </div>
@@ -128,7 +129,7 @@ export default function DebtTracker() {
             <FiUserX size={22} className="opacity-90" />
             <FiTrendingDown size={16} className="opacity-70" />
           </div>
-          <div className="text-2xl font-bold">${formatCurrency(totalIOwe)}</div>
+          <div className="text-2xl font-bold">{formatCurrency(totalIOwe)}</div>
           <div className="text-xs mt-1 opacity-90">I owe them</div>
           <div className="text-xs opacity-75 mt-1">{debts.iOwe.length} person(s)</div>
         </div>
@@ -146,7 +147,7 @@ export default function DebtTracker() {
               netBalance < 0 ? 'text-rose-700' :
                 'text-gray-700'
               }`}>
-              {netBalance > 0 ? '+' : ''}${formatCurrency(Math.abs(netBalance))}
+              {netBalance > 0 ? '+' : ''}{formatCurrency(Math.abs(netBalance))}
             </div>
           </div>
           <div className={`rounded-full p-3 ${netBalance > 0 ? 'bg-emerald-200' :
@@ -195,7 +196,7 @@ export default function DebtTracker() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-xl font-bold text-green-600">${formatCurrency(debt.amount)}</div>
+                    <div className="text-xl font-bold text-green-600">{formatCurrency(debt.amount)}</div>
                     <div className="text-xs text-gray-400 mt-1">Total owed</div>
                   </div>
                 </div>
@@ -239,7 +240,7 @@ export default function DebtTracker() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-xl font-bold text-red-600">${formatCurrency(debt.amount)}</div>
+                    <div className="text-xl font-bold text-red-600">{formatCurrency(debt.amount)}</div>
                     <div className="text-xs text-gray-400 mt-1">Total owed</div>
                   </div>
                 </div>

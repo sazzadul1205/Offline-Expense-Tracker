@@ -8,7 +8,7 @@ import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
 import { initSampleData, migrateExistingTransactions } from './db/database';
 
 // Icons
-import { FiHome, FiPlusCircle, FiUsers, FiCreditCard, FiTag, FiBarChart2 } from 'react-icons/fi';
+import { FiHome, FiPlusCircle, FiUsers, FiCreditCard, FiTag, FiBarChart2, FiSettings } from 'react-icons/fi';
 
 // Components
 import Reports from './components/Reports';
@@ -17,6 +17,7 @@ import Dashboard from './components/Dashboard';
 import Categories from './components/Categories';
 import DebtTracker from './components/DebtTracker';
 import AddTransaction from './components/AddTransaction';
+import Settings from './components/Settings';
 
 function App() {
   useEffect(() => {
@@ -33,7 +34,8 @@ function App() {
     { path: '/debt', name: 'Debt', icon: FiUsers },
     { path: '/accounts', name: 'Accounts', icon: FiCreditCard },
     { path: '/categories', name: 'Tags', icon: FiTag },
-    { path: '/reports', name: 'Stats', icon: FiBarChart2 }
+    { path: '/reports', name: 'Stats', icon: FiBarChart2 },
+    { path: '/settings', name: 'More', icon: FiSettings }
   ];
 
   return (
@@ -65,12 +67,13 @@ function App() {
             <Route path="/accounts" element={<Accounts />} />
             <Route path="/categories" element={<Categories />} />
             <Route path="/reports" element={<Reports />} />
+            <Route path="/settings" element={<Settings />} />
           </Routes>
         </div>
 
-        {/* Bottom Navigation - Mobile Optimized */}
-        <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-gray-200 shadow-lg z-50">
-          <div className="flex justify-around items-center max-w-md mx-auto">
+        {/* Bottom Navigation - Improved Mobile Dock */}
+        <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-lg border-t border-gray-200 shadow-lg z-50 safe-bottom">
+          <div className="flex justify-around items-center max-w-md mx-auto px-2 py-1">
             {navItems.map((item) => {
               const Icon = item.icon;
               return (
@@ -78,8 +81,8 @@ function App() {
                   key={item.path}
                   to={item.path}
                   className={({ isActive }) =>
-                    `flex flex-col items-center py-2 px-3 transition-all duration-200 rounded-2xl ${isActive
-                      ? 'text-blue-600 bg-blue-50 -mt-1 shadow-sm'
+                    `flex flex-col items-center py-2 px-2 transition-all duration-200 rounded-2xl ${isActive
+                      ? 'text-blue-600 bg-blue-50 -mt-2 shadow-md scale-105'
                       : 'text-gray-500 hover:text-blue-500'
                     }`
                   }
@@ -87,11 +90,11 @@ function App() {
                   {({ isActive }) => (
                     <>
                       <Icon
-                        className={`text-2xl transition-all duration-200 ${isActive ? 'text-blue-600' : 'text-gray-500'
+                        className={`text-xl transition-all duration-200 ${isActive ? 'text-blue-600' : 'text-gray-500'
                           }`}
                         strokeWidth={isActive ? 2.5 : 2}
                       />
-                      <span className={`text-xs mt-1 font-medium transition-all duration-200 ${isActive ? 'text-blue-600 scale-105' : 'text-gray-500'
+                      <span className={`text-[10px] mt-0.5 font-medium transition-all duration-200 ${isActive ? 'text-blue-600' : 'text-gray-500'
                         }`}>
                         {item.name}
                       </span>
