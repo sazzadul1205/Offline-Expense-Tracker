@@ -4,7 +4,7 @@ import Swal from 'sweetalert2';
 import { APP_VERSION, isNewerVersion } from '../version';  // Import from version file
 
 // URL to your version.json file in GitHub
-const UPDATE_URL = "https://raw.githubusercontent.com/sazzadul1205/Offline-Expense-Tracker/main/updates/version.json";
+const UPDATE_URL = "https://raw.githubusercontent.com/sazzadul1205/Offline-Expense-Tracker/master/updates/version.json";
 
 export const checkForUpdates = async (showManualToast = false) => {
   try {
