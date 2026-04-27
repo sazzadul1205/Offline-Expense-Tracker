@@ -1,7 +1,7 @@
 // src/version.js
 // Centralized version management - Update this file when releasing new versions
 
-export const APP_VERSION = "4.0.1";
+export const APP_VERSION = "4.0.2";
 
 // Optional: Add version history for tracking
 export const VERSION_HISTORY = [
