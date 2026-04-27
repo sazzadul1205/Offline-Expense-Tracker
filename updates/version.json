@@ -1,13 +1,10 @@
 {
-  "version": "4.0.1",
+  "version": "4.0.2",
   "updateAvailable": true,
   "releaseDate": "2026-04-27",
-  "downloadUrl": "https://github.com/sazzadul1205/Offline-Expense-Tracker/releases/download/v4.0.1/app-debug.apk",
+  "downloadUrl": "https://github.com/sazzadul1205/Offline-Expense-Tracker/releases/download/v4.0.2/app-debug.apk",
   "changes": [
-    "📱 Fixed bottom navigation overlapping with gesture bar",
-    "🎨 Added safe area padding for modern phones",
-    "🐛 Fixed minor bugs in debt tracking",
-    "⚡ Performance improvements",
-    "💳 Updated account balance calculation"
+   "UI Updated In Many Pages",
+   "Some Visual Bugs Fixed"
   ]
 }
