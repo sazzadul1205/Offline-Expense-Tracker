@@ -70,3 +70,80 @@ textarea {
 body {
   overscroll-behavior-y: none;
 }
+
+/* ========================================
+   UNIVERSAL MOBILE SAFE AREA FIX
+   Works on ALL devices: iPhone, Android, tablets
+   ======================================== */
+
+/* Safe area bottom variable */
+:root {
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --nav-height: 70px;
+}
+
+/* Fix for bottom navigation on all mobile devices */
+.fixed.bottom-0 {
+  /* Default padding for all devices */
+  padding-bottom: 8px;
+
+  /* For iOS Safari 11.0 - 11.2 */
+  padding-bottom: constant(safe-area-inset-bottom, 8px);
+
+  /* For modern browsers (iOS 11.2+, Android) */
+  padding-bottom: env(safe-area-inset-bottom, 8px);
+}
+
+/* For devices with large gesture areas (iPhone 15, modern Androids) */
+@supports (padding-bottom: max(0px)) {
+  .fixed.bottom-0 {
+    padding-bottom: max(12px, env(safe-area-inset-bottom, 12px));
+  }
+}
+
+/* Extra bottom padding for main content to prevent overlap */
+.pb-safe {
+  padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+}
+
+/* Only apply extra padding on mobile devices (not tablets/desktops) */
+@media (max-width: 768px) {
+  .pb-safe {
+    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .fixed.bottom-0 {
+    padding-bottom: max(12px, env(safe-area-inset-bottom, 12px));
+  }
+}
+
+/* Tablets and larger - no extra bottom padding needed */
+@media (min-width: 769px) {
+  .pb-safe {
+    padding-bottom: 20px;
+  }
+
+  .fixed.bottom-0 {
+    padding-bottom: 0px;
+  }
+}
+
+/* Special fix for Android gesture navigation on phones */
+@media (any-pointer: coarse) and (max-height: 900px) {
+  .fixed.bottom-0 {
+    padding-bottom: max(12px, env(safe-area-inset-bottom, 12px));
+  }
+}
+
+/* Background extension for safe area */
+.fixed.bottom-0::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: env(safe-area-inset-bottom, 0px);
+  background: inherit;
+  pointer-events: none;
+  z-index: -1;
+}

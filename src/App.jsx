@@ -2,6 +2,8 @@
 
 // React
 import { useEffect } from 'react';
+
+// Router
 import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
 
 // Database
@@ -11,15 +13,21 @@ import { initSampleData, migrateExistingTransactions } from './db/database';
 import { FiHome, FiPlusCircle, FiUsers, FiCreditCard, FiTag, FiBarChart2, FiSettings } from 'react-icons/fi';
 
 // Components
+import Settings from './components/Settings';
 import Reports from './components/Reports';
 import Accounts from './components/Accounts';
 import Dashboard from './components/Dashboard';
 import Categories from './components/Categories';
 import DebtTracker from './components/DebtTracker';
 import AddTransaction from './components/AddTransaction';
-import Settings from './components/Settings';
+
+// Update Checker
+import { useAutoUpdateCheck } from './components/UpdateChecker';
 
 function App() {
+  // Auto-check for updates on app start
+  useAutoUpdateCheck();
+
   useEffect(() => {
     const initializeDatabase = async () => {
       await initSampleData();
@@ -45,7 +53,7 @@ function App() {
         v7_relativeSplatPath: true,
       }}
     >
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pb-20">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
         {/* Mobile Header */}
         <header className="bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg sticky top-0 z-40">
           <div className="px-5 py-4">
@@ -59,7 +67,7 @@ function App() {
         </header>
 
         {/* Main Content */}
-        <div className="px-4 py-4 max-w-md mx-auto">
+        <div className="px-4 py-4 max-w-md mx-auto pb-24">
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/add" element={<AddTransaction />} />
@@ -71,9 +79,14 @@ function App() {
           </Routes>
         </div>
 
-        {/* Bottom Navigation - Improved Mobile Dock */}
-        <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-lg border-t border-gray-200 shadow-lg z-50 safe-bottom">
-          <div className="flex justify-around items-center max-w-md mx-auto px-2 py-1">
+        {/* Bottom Navigation - Universal fix for ALL mobiles */}
+        <nav
+          className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-lg border-t border-gray-200 shadow-lg z-50"
+          style={{
+            paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 8px)'
+          }}
+        >
+          <div className="flex justify-around items-center max-w-md mx-auto px-2" style={{ paddingTop: '8px', paddingBottom: '8px' }}>
             {navItems.map((item) => {
               const Icon = item.icon;
               return (

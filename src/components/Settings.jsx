@@ -19,6 +19,10 @@ import { MdSecurity, MdUpdate } from 'react-icons/md';
 // Components
 import ErrorLogViewer from './ErrorLogViewer';
 
+// Update Checker
+import { checkForUpdates } from './UpdateChecker';
+
+
 export default function Settings() {
 
   // States
@@ -186,6 +190,8 @@ export default function Settings() {
           </div>
         </div>
         <div className="divide-y divide-gray-100">
+
+          {/* Stats */}
           <div className="p-4 space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Total Accounts</span>
@@ -205,6 +211,7 @@ export default function Settings() {
             </div>
           </div>
 
+          {/* Export/Import */}
           <button
             onClick={handleExport}
             className="w-full flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition-colors"
@@ -218,6 +225,7 @@ export default function Settings() {
             </div>
           </button>
 
+          {/* Import */}
           <label className="w-full flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition-colors cursor-pointer">
             <div className="bg-blue-100 p-2 rounded-xl">
               <FiUpload className="text-blue-600" size={18} />
@@ -234,6 +242,7 @@ export default function Settings() {
             />
           </label>
 
+          {/* Clear */}
           <button
             onClick={handleClearData}
             className="w-full flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition-colors"
@@ -247,6 +256,21 @@ export default function Settings() {
             </div>
           </button>
 
+          {/* Check for Updates */}
+          <button
+            onClick={() => checkForUpdates(true)}
+            className="w-full flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition-colors"
+          >
+            <div className="bg-blue-100 p-2 rounded-xl">
+              <FiDownload className="text-blue-600" size={18} />
+            </div>
+            <div className="flex-1 text-left">
+              <div className="text-sm font-medium text-gray-800">Check for Updates</div>
+              <div className="text-xs text-gray-500">Download latest version with new features</div>
+            </div>
+          </button>
+
+          {/* Error Logs */}
           <button
             onClick={() => setShowErrorLogs(true)}
             className="w-full flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition-colors"
