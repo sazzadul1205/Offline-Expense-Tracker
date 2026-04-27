@@ -1,18 +1,15 @@
 // src/components/UpdateChecker.jsx
 import { useEffect, useState } from 'react';
 import Swal from 'sweetalert2';
-
-// Current version of your app
-const CURRENT_VERSION = "4.0.0";
+import { APP_VERSION, isNewerVersion } from '../version';  // Import from version file
 
 // URL to your version.json file in GitHub
-const UPDATE_URL = "https://raw.githubusercontent.com/sazzadul1205/Offline-Expense-Tracker/master/updates/version.json";
+const UPDATE_URL = "https://raw.githubusercontent.com/sazzadul1205/Offline-Expense-Tracker/main/updates/version.json";
 
 export const checkForUpdates = async (showManualToast = false) => {
   try {
     const response = await fetch(UPDATE_URL);
 
-    // If no internet or file not found
     if (!response.ok) {
       if (showManualToast) {
         await Swal.fire({
@@ -27,8 +24,8 @@ export const checkForUpdates = async (showManualToast = false) => {
 
     const latest = await response.json();
 
-    // Compare versions
-    if (latest.version !== CURRENT_VERSION && latest.updateAvailable) {
+    // Use the imported version comparison function
+    if (isNewerVersion(latest.version) && latest.updateAvailable) {
       // Build the features list HTML
       const featuresHtml = latest.changes.map(change =>
         `<li style="margin: 8px 0; display: flex; align-items: start; gap: 8px;">
@@ -37,15 +34,27 @@ export const checkForUpdates = async (showManualToast = false) => {
         </li>`
       ).join('');
 
-      // First dialog - Ask if user wants to update
+      // Show current vs new version
+      const versionCompareHtml = `
+        <div style="display: flex; justify-content: center; gap: 20px; margin: 15px 0;">
+          <div style="text-align: center;">
+            <span style="font-size: 0.8em; color: #6b7280;">Current</span>
+            <div style="font-size: 1.2em; font-weight: bold; color: #374151;">v${APP_VERSION}</div>
+          </div>
+          <div style="font-size: 1.5em; color: #9ca3af;">→</div>
+          <div style="text-align: center;">
+            <span style="font-size: 0.8em; color: #6b7280;">New</span>
+            <div style="font-size: 1.2em; font-weight: bold; color: #3b82f6;">v${latest.version}</div>
+          </div>
+        </div>
+      `;
+
       const result = await Swal.fire({
         title: '✨ Update Available!',
         html: `
           <div style="text-align: left;">
-            <p style="font-size: 1.1em; margin-bottom: 10px;">
-              <strong>Version ${latest.version}</strong> is now available
-            </p>
-            <p style="color: #6b7280; margin-bottom: 15px; font-size: 0.9em;">
+            ${versionCompareHtml}
+            <p style="color: #6b7280; margin-bottom: 15px; font-size: 0.9em; text-align: center;">
               📅 Released: ${latest.releaseDate}
             </p>
             <div style="background: #f3f4f6; padding: 15px; border-radius: 12px; margin: 15px 0;">
@@ -73,7 +82,6 @@ export const checkForUpdates = async (showManualToast = false) => {
       });
 
       if (result.isConfirmed) {
-        // Second dialog - Final confirmation before download
         const confirmDownload = await Swal.fire({
           title: 'Start Download?',
           html: `
@@ -92,9 +100,8 @@ export const checkForUpdates = async (showManualToast = false) => {
         });
 
         if (confirmDownload.isConfirmed) {
-          // Show downloading with progress simulation
           let progress = 0;
-          const downloadModal = Swal.fire({
+          Swal.fire({
             title: 'Downloading Update...',
             html: `
               <div style="text-align: center;">
@@ -108,41 +115,29 @@ export const checkForUpdates = async (showManualToast = false) => {
             allowOutsideClick: false,
             showConfirmButton: false,
             didOpen: () => {
-              let progress = 0;
-
               const progressBar = document.getElementById('download-progress');
               const statusText = document.getElementById('download-status');
 
               const interval = setInterval(() => {
                 progress += 10;
-
                 if (progressBar) {
                   progressBar.style.width = `${Math.min(progress, 90)}%`;
                 }
-
                 if (statusText) {
                   if (progress < 30) statusText.textContent = 'Connecting to server...';
                   else if (progress < 60) statusText.textContent = 'Preparing update package...';
                   else if (progress < 90) statusText.textContent = 'Almost ready...';
                   else statusText.textContent = 'Starting download...';
                 }
-
-                if (progress >= 100) {
-                  clearInterval(interval);
-                }
+                if (progress >= 100) clearInterval(interval);
               }, 200);
 
               setTimeout(() => {
                 clearInterval(interval);
-
-                if (progressBar) {
-                  progressBar.style.width = '100%';
-                }
-
+                if (progressBar) progressBar.style.width = '100%';
                 setTimeout(() => {
                   window.open(latest.downloadUrl, '_blank');
                   Swal.close();
-
                   Swal.fire({
                     title: 'Download Started!',
                     text: 'Your update is now downloading.',
@@ -155,13 +150,12 @@ export const checkForUpdates = async (showManualToast = false) => {
           });
         }
       }
-
       return true;
     } else {
       if (showManualToast) {
         await Swal.fire({
           title: 'No Updates Available',
-          text: `You're running the latest version (${CURRENT_VERSION})`,
+          text: `You're running the latest version (${APP_VERSION})`,
           icon: 'success',
           confirmButtonColor: '#3b82f6',
           timer: 2000,
@@ -191,14 +185,12 @@ export const useAutoUpdateCheck = () => {
   useEffect(() => {
     const checkOnStart = async () => {
       if (!hasChecked) {
-        // Wait 3 seconds after app loads
         setTimeout(async () => {
           await checkForUpdates(false);
           setHasChecked(true);
         }, 3000);
       }
     };
-
     checkOnStart();
   }, [hasChecked]);
 };

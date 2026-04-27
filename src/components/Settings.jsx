@@ -126,6 +126,15 @@ export default function Settings() {
 
   const updateLog = [
     {
+      version: 'v4.0.1', date: '2026-04-26', changes: [
+        "📱 Fixed bottom navigation overlapping with gesture bar",
+        "🎨 Added safe area padding for modern phones",
+        "🐛 Fixed minor bugs in debt tracking",
+        "⚡ Performance improvements",
+        "💳 Updated account balance calculation"
+      ]
+    },
+    {
       version: 'v4.0.0', date: '2026-04-26', changes: [
         '🎉 Complete UI redesign with Tailwind CSS',
         '🔐 Added data encryption for security',
