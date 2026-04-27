@@ -170,7 +170,7 @@ export default function Layout({ children, title }) {
       )}
 
       {/* CSS Animations */}
-      <style jsx>{`
+      <style>{`
         @keyframes slide-down {
           from {
             opacity: 0;

@@ -3,7 +3,7 @@ import Dexie from "dexie";
 
 export const db = new Dexie("ExpenseTrackerDB");
 
-// Version 3 - Added errorLogs table
+// Version 3 - Fixed schema
 db.version(3).stores({
   accounts: "++id, name, type, balance, currency",
   categories: "++id, name, type",
@@ -25,7 +25,12 @@ db.version(3).stores({
     settlesTransactionId,
     title,
     details,
-    fee
+    fee,
+    feeTransactionId,
+    linkedTransferId,
+    [date+type],
+    [status+type],
+    [person+status]
   `,
   errorLogs: `
     ++id,
@@ -38,57 +43,7 @@ db.version(3).stores({
   `,
 });
 
-// Version 2 - Added timestamp and time fields
-db.version(2).stores({
-  accounts: "++id, name, type, balance, currency",
-  categories: "++id, name, type",
-  transactions: `
-    ++id,
-    date,
-    time,
-    timestamp,
-    type,
-    amount,
-    status,
-    direction,
-    person,
-    accountId,
-    fromAccountId,
-    toAccountId,
-    categoryId,
-    relatedTransactionId,
-    settlesTransactionId,
-    title,
-    details,
-    fee
-  `,
-});
-
-// Version 1 - Original schema
-db.version(1).stores({
-  accounts: "++id, name, type, balance",
-  categories: "++id, name, type",
-  transactions: `
-    ++id,
-    date,
-    type,
-    amount,
-    status,
-    direction,
-    person,
-    accountId,
-    fromAccountId,
-    toAccountId,
-    categoryId,
-    relatedTransactionId,
-    settlesTransactionId,
-    title,
-    details,
-    fee
-  `,
-});
-
-export const ACCOUNT_TYPES = ["cash", "bkash", "card", "bank"];
+export const ACCOUNT_TYPES = ["cash", "mobile", "card", "bank"];
 export const TRANSACTION_TYPES = [
   "expense",
   "income",
@@ -101,86 +56,73 @@ export const DIRECTIONS = ["owe_me", "i_owe"];
 export const CURRENCY = "BDT";
 export const CURRENCY_SYMBOL = "৳";
 
+// Initialize database with optional default data for first-time users
 export async function initSampleData() {
   try {
     const accountCount = await db.accounts.count();
+    const categoryCount = await db.categories.count();
+
     if (accountCount === 0) {
       await db.accounts.bulkAdd([
-        { name: "Cash", type: "cash", balance: 0, currency: CURRENCY },
-        { name: "bKash", type: "bkash", balance: 0, currency: CURRENCY },
-        { name: "Credit Card", type: "card", balance: 0, currency: CURRENCY },
-        { name: "Bank Account", type: "bank", balance: 0, currency: CURRENCY },
+        { name: "Cash", type: "cash", balance: 0 },
+        { name: "Mobile Banking", type: "mobile", balance: 0 },
       ]);
+      console.log("Default accounts created");
     }
 
-    const categoryCount = await db.categories.count();
     if (categoryCount === 0) {
       await db.categories.bulkAdd([
         { name: "Food & Dining", type: "expense" },
-        { name: "Transport", type: "expense" },
-        { name: "Salary", type: "income" },
+        { name: "Transportation", type: "expense" },
         { name: "Shopping", type: "expense" },
-        { name: "Utilities", type: "expense" },
-        { name: "Rent", type: "expense" },
+        { name: "Bills & Utilities", type: "expense" },
         { name: "Entertainment", type: "expense" },
         { name: "Healthcare", type: "expense" },
-        { name: "Education", type: "expense" },
+        { name: "Salary", type: "income" },
         { name: "Freelance", type: "income" },
-        { name: "Business", type: "income" },
+        { name: "Gift", type: "income" },
         { name: "Investment", type: "income" },
       ]);
+      console.log("Default categories created");
     }
+
+    console.log("Database initialized successfully");
+    return true;
   } catch (error) {
-    console.error("Failed to initialize sample data:", error);
+    console.error("Failed to initialize database:", error);
     throw error;
   }
 }
 
-// Migration function to add timestamp to existing transactions
+// Migration function
 export async function migrateExistingTransactions() {
+  console.log("Database ready - checking for migrations...");
   try {
+    // Check if we need to add missing fields to existing transactions
     const transactions = await db.transactions.toArray();
     let needsUpdate = false;
 
-    for (const transaction of transactions) {
-      let shouldUpdate = false;
+    for (const tx of transactions) {
       const updates = {};
-
-      if (!transaction.timestamp && transaction.date) {
-        const dateTime = transaction.time
-          ? new Date(`${transaction.date}T${transaction.time}`)
-          : new Date(transaction.date);
-        updates.timestamp = dateTime.getTime();
-        shouldUpdate = true;
+      if (tx.feeTransactionId === undefined) {
+        updates.feeTransactionId = null;
         needsUpdate = true;
       }
-
-      if (!transaction.time && transaction.date) {
-        updates.time = "12:00";
-        shouldUpdate = true;
+      if (tx.linkedTransferId === undefined) {
+        updates.linkedTransferId = null;
         needsUpdate = true;
       }
-
-      if (shouldUpdate) {
-        await db.transactions.update(transaction.id, updates);
-      }
-    }
-
-    const accounts = await db.accounts.toArray();
-    for (const account of accounts) {
-      if (!account.currency) {
-        await db.accounts.update(account.id, { currency: CURRENCY });
-        needsUpdate = true;
+      if (Object.keys(updates).length > 0) {
+        await db.transactions.update(tx.id, updates);
       }
     }
 
     if (needsUpdate) {
-      console.log(
-        "Migration completed: Added timestamps and currency to existing data",
-      );
+      console.log("Migration completed - added missing fields");
     }
+    return true;
   } catch (error) {
     console.error("Migration error:", error);
-    throw error;
+    return false;
   }
 }

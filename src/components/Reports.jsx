@@ -27,8 +27,7 @@ export default function Reports() {
     savingsRate: 0,
     expenseRatio: 0,
     categoryBreakdown: [],
-    topCategory: null,
-    monthlyTrend: []
+    topCategory: null
   });
 
   // Load reports
@@ -55,51 +54,62 @@ export default function Reports() {
   // Load reports
   const loadReports = async () => {
     setIsLoading(true);
-    const { start, end } = getDateRange();
+    try {
+      const { start, end } = getDateRange();
 
-    const transactions = await db.transactions
-      .where('date')
-      .between(start, end)
-      .and(t => t.status === 'paid')
-      .toArray();
+      const transactions = await db.transactions
+        .where('date')
+        .between(start, end)
+        .and(t => t.status === 'paid')
+        .toArray();
 
-    const paidTransactions = transactions.filter(t => t.status === 'paid');
-    const expenses = paidTransactions.filter(t => t.type === 'expense');
-    const income = paidTransactions.filter(t => t.type === 'income');
+      const paidTransactions = transactions.filter(t => t.status === 'paid');
+      const expenses = paidTransactions.filter(t => t.type === 'expense');
+      const income = paidTransactions.filter(t => t.type === 'income');
 
-    const totalExpenses = expenses.reduce((sum, t) => sum + t.amount, 0);
-    const totalIncome = income.reduce((sum, t) => sum + t.amount, 0);
-    const netCashflow = totalIncome - totalExpenses;
-    const savingsRate = totalIncome > 0 ? (netCashflow / totalIncome) * 100 : 0;
-    const expenseRatio = totalIncome > 0 ? (totalExpenses / totalIncome) * 100 : 0;
+      const totalExpenses = expenses.reduce((sum, t) => sum + t.amount, 0);
+      const totalIncome = income.reduce((sum, t) => sum + t.amount, 0);
+      const netCashflow = totalIncome - totalExpenses;
+      const savingsRate = totalIncome > 0 ? (netCashflow / totalIncome) * 100 : 0;
+      const expenseRatio = totalIncome > 0 ? (totalExpenses / totalIncome) * 100 : 0;
 
-    // Category breakdown
-    const categoryMap = {};
-    for (const exp of expenses) {
-      if (exp.categoryId) {
-        const category = await db.categories.get(exp.categoryId);
-        const catName = category?.name || 'Uncategorized';
-        categoryMap[catName] = (categoryMap[catName] || 0) + exp.amount;
+      // Category breakdown
+      const categoryMap = {};
+      for (const exp of expenses) {
+        if (exp.categoryId) {
+          try {
+            const category = await db.categories.get(exp.categoryId);
+            const catName = category?.name || 'Uncategorized';
+            categoryMap[catName] = (categoryMap[catName] || 0) + exp.amount;
+          } catch (err) {
+            console.error('Error fetching category:', err);
+            categoryMap['Uncategorized'] = (categoryMap['Uncategorized'] || 0) + exp.amount;
+          }
+        } else {
+          categoryMap['Uncategorized'] = (categoryMap['Uncategorized'] || 0) + exp.amount;
+        }
       }
+
+      const categoryBreakdown = Object.entries(categoryMap)
+        .map(([name, amount]) => ({ name, amount }))
+        .sort((a, b) => b.amount - a.amount);
+
+      const topCategory = categoryBreakdown[0] || null;
+
+      setReportData({
+        totalExpenses,
+        totalIncome,
+        netCashflow,
+        savingsRate,
+        expenseRatio,
+        categoryBreakdown,
+        topCategory
+      });
+    } catch (error) {
+      console.error('Failed to load reports:', error);
+    } finally {
+      setIsLoading(false);
     }
-
-    const categoryBreakdown = Object.entries(categoryMap)
-      .map(([name, amount]) => ({ name, amount }))
-      .sort((a, b) => b.amount - a.amount);
-
-    const topCategory = categoryBreakdown[0] || null;
-
-    setReportData({
-      totalExpenses,
-      totalIncome,
-      netCashflow,
-      savingsRate,
-      expenseRatio,
-      categoryBreakdown,
-      topCategory,
-      monthlyTrend: []
-    });
-    setIsLoading(false);
   };
 
   // Get period label
@@ -150,7 +160,7 @@ export default function Reports() {
             <span className="text-xs text-gray-400">{getPeriodLabel()}</span>
           </div>
           <div className="text-gray-600 text-xs mb-1">Total Expenses</div>
-          <div className="text-xl font-bold text-red-600">${formatCurrency(reportData.totalExpenses)}</div>
+          <div className="text-xl font-bold text-red-600">{formatCurrency(reportData.totalExpenses)}</div>
         </div>
 
         <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
@@ -161,7 +171,7 @@ export default function Reports() {
             <span className="text-xs text-gray-400">{getPeriodLabel()}</span>
           </div>
           <div className="text-gray-600 text-xs mb-1">Total Income</div>
-          <div className="text-xl font-bold text-green-600">${formatCurrency(reportData.totalIncome)}</div>
+          <div className="text-xl font-bold text-green-600">{formatCurrency(reportData.totalIncome)}</div>
         </div>
       </div>
 
@@ -183,7 +193,7 @@ export default function Reports() {
             )}
           </div>
           <div className="text-3xl font-bold">
-            {reportData.netCashflow >= 0 ? '+' : ''}${formatCurrency(Math.abs(reportData.netCashflow))}
+            {reportData.netCashflow >= 0 ? '+' : ''}{formatCurrency(Math.abs(reportData.netCashflow))}
           </div>
           <div className="text-xs mt-2 opacity-80">
             {reportData.netCashflow >= 0
@@ -227,7 +237,6 @@ export default function Reports() {
             <div className="space-y-4">
               {reportData.categoryBreakdown.map((cat, index) => {
                 const percentage = (cat.amount / reportData.totalExpenses) * 100;
-                // FIXED: Use switch statement instead of template literals
                 let bgColor, fromColor, toColor;
                 switch (index % 8) {
                   case 0:
@@ -321,19 +330,19 @@ export default function Reports() {
               {reportData.totalExpenses > reportData.totalIncome ? (
                 <div className="flex items-start gap-2 text-amber-700">
                   <FiAlertCircle size={16} className="mt-0.5 flex-shrink-0" />
-                  <p>Your expenses exceed your income by ${formatCurrency(reportData.totalExpenses - reportData.totalIncome)}. Consider reducing spending.</p>
+                  <p>Your expenses exceed your income by {formatCurrency(reportData.totalExpenses - reportData.totalIncome)}. Consider reducing spending.</p>
                 </div>
               ) : (
                 <div className="flex items-start gap-2 text-emerald-700">
                   <FiCheckCircle size={16} className="mt-0.5 flex-shrink-0" />
-                  <p>Great! Your income exceeds expenses by ${formatCurrency(reportData.netCashflow)}.</p>
+                  <p>Great! Your income exceeds expenses by {formatCurrency(reportData.netCashflow)}.</p>
                 </div>
               )}
 
               {reportData.topCategory && (
                 <div className="flex items-start gap-2 text-blue-700">
                   <FiBarChart2 size={16} className="mt-0.5 flex-shrink-0" />
-                  <p>Your highest expense category is "{reportData.topCategory.name}" at ${formatCurrency(reportData.topCategory.amount)}.</p>
+                  <p>Your highest expense category is "{reportData.topCategory.name}" at {formatCurrency(reportData.topCategory.amount)}.</p>
                 </div>
               )}
 

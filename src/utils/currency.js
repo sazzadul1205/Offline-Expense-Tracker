@@ -3,9 +3,9 @@
 export const CURRENCY = "BDT";
 export const CURRENCY_SYMBOL = "৳";
 
-// Format currency for BDT
+// Format currency for BDT - English digits, commas for thousands
 export const formatCurrency = (amount) => {
-  return new Intl.NumberFormat("bn-BD", {
+  return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "BDT",
     minimumFractionDigits: 0,
@@ -13,9 +13,9 @@ export const formatCurrency = (amount) => {
   }).format(amount);
 };
 
-// Format currency without symbol for input fields
+// Format currency without symbol for input fields - English digits
 export const formatNumber = (amount) => {
-  return new Intl.NumberFormat("bn-BD", {
+  return new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(amount);

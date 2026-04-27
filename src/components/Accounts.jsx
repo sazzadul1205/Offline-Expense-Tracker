@@ -6,7 +6,8 @@ import { db } from '../db/database';
 import {
   MdAccountBalance,
   MdSavings,
-  MdAccountBalanceWallet
+  MdAccountBalanceWallet,
+  MdPhoneAndroid
 } from 'react-icons/md';
 
 import {
@@ -40,7 +41,7 @@ export default function Accounts() {
     const data = await db.accounts.toArray();
     setAccounts(data);
 
-    const total = data.reduce((s, a) => s + a.balance, 0);
+    const total = data.reduce((s, a) => s + (a.balance || 0), 0);
     setTotalBalance(total);
   };
 
@@ -50,9 +51,12 @@ export default function Accounts() {
       return;
     }
 
-    await db.accounts.add(newAccount);
+    await db.accounts.add({
+      ...newAccount,
+      balance: parseFloat(newAccount.balance) || 0
+    });
 
-    setNewAccount({ name: '', type: 'cash', balance: 0 });
+    setNewAccount({ name: '', type: 'cash', balance: '' });
     setShowForm(false);
     await loadAccounts();
 
@@ -60,6 +64,21 @@ export default function Accounts() {
   };
 
   const handleDeleteAccount = async (id) => {
+    // Check if account is used in any transaction
+    const usedInTransactions = await db.transactions
+      .where('accountId')
+      .equals(id)
+      .or('fromAccountId')
+      .equals(id)
+      .or('toAccountId')
+      .equals(id)
+      .count();
+
+    if (usedInTransactions > 0) {
+      showErrorAlert('Cannot Delete', 'This account has transaction history. Delete or reassign transactions first.');
+      return;
+    }
+
     const confirmed = await showConfirmAlert(
       'Delete account?',
       'This action cannot be undone',
@@ -76,7 +95,7 @@ export default function Accounts() {
 
   const types = [
     { id: 'cash', label: 'Cash', icon: MdAccountBalanceWallet },
-    { id: 'bkash', label: 'bKash', icon: FiPhone },
+    { id: 'mobile', label: 'Mobile Banking', icon: MdPhoneAndroid },
     { id: 'card', label: 'Card', icon: FiCreditCard },
     { id: 'bank', label: 'Bank', icon: MdAccountBalance }
   ];
@@ -191,7 +210,7 @@ export default function Accounts() {
                 <div>
                   <div className="font-medium">{acc.name}</div>
                   <div className="text-xs text-gray-400 uppercase">
-                    {acc.type}
+                    {acc.type === 'mobile' ? 'Mobile Banking' : acc.type}
                   </div>
                 </div>
               </div>
@@ -229,4 +248,4 @@ export default function Accounts() {
 
     </div>
   );
-}
+} 

@@ -1,10 +1,7 @@
 {
-  "version": "4.0.2",
+  "version": "1.1.0",
   "updateAvailable": true,
   "releaseDate": "2026-04-27",
   "downloadUrl": "https://github.com/sazzadul1205/Offline-Expense-Tracker/releases/download/v4.0.2/app-debug.apk",
-  "changes": [
-   "UI Updated In Many Pages",
-   "Some Visual Bugs Fixed"
-  ]
+  "changes": ["Full overall of the App"]
 }

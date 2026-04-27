@@ -4,9 +4,9 @@
 import { useState, useEffect } from 'react';
 
 // Database
+import Dexie from 'dexie';
 import { db } from '../db/database';
 import { initSampleData } from '../db/database';
-
 
 // Utils
 import { exportData, importData } from '../utils/backup';
@@ -20,42 +20,49 @@ import { MdSecurity, MdUpdate } from 'react-icons/md';
 import ErrorLogViewer from './ErrorLogViewer';
 
 // Update Checker
-import { checkForUpdates } from './UpdateChecker';
+import { checkForUpdates } from '../utils/updateChecker';
 
+// Version Management
+import { APP_VERSION, VERSION_HISTORY, formatVersion, getLatestVersionInfo } from '../version';
 
 export default function Settings() {
 
   // States
-  const [appVersion, setAppVersion] = useState('4.0.0');
   const [showErrorLogs, setShowErrorLogs] = useState(false);
   const [isEncryptionEnabled, setIsEncryptionEnabled] = useState(true);
   const [stats, setStats] = useState({ totalAccounts: 0, totalCategories: 0, totalTransactions: 0, dbSize: 0 });
+  const [showAllVersions, setShowAllVersions] = useState(false);
 
   useEffect(() => {
     loadStats();
   }, []);
 
   const loadStats = async () => {
-    const accounts = await db.accounts.toArray();
-    const categories = await db.categories.toArray();
-    const transactions = await db.transactions.toArray();
+    try {
+      const accounts = await db.accounts.toArray();
+      const categories = await db.categories.toArray();
+      const transactions = await db.transactions.toArray();
 
-    // Estimate DB size
-    const dbData = { accounts, categories, transactions };
-    const dbSize = new Blob([JSON.stringify(dbData)]).size;
+      // Estimate DB size
+      const dbData = { accounts, categories, transactions };
+      const dbSize = new Blob([JSON.stringify(dbData)]).size;
 
-    setStats({
-      totalAccounts: accounts.length,
-      totalCategories: categories.length,
-      totalTransactions: transactions.length,
-      dbSize: dbSize
-    });
+      setStats({
+        totalAccounts: accounts.length,
+        totalCategories: categories.length,
+        totalTransactions: transactions.length,
+        dbSize: dbSize
+      });
+    } catch (error) {
+      console.error('Error loading stats:', error);
+      showErrorAlert('Error', 'Failed to load database statistics');
+    }
   };
 
   const handleExport = async () => {
     const confirmed = await showConfirmAlert(
       'Export Data',
-      'This will export all your data as an encrypted backup file. Continue?',
+      'This will export all your data as a backup file. Continue?',
       'Export',
       'Cancel'
     );
@@ -65,6 +72,7 @@ export default function Settings() {
         await exportData();
         showSuccessAlert('Export Successful', 'Your data has been exported successfully!');
       } catch (error) {
+        console.error('Export error:', error);
         showErrorAlert('Export Failed', 'There was an error exporting your data.');
       }
     }
@@ -76,7 +84,7 @@ export default function Settings() {
 
     const confirmed = await showConfirmAlert(
       'Import Data',
-      'This will replace all your existing data. Make sure you have a backup. Continue?',
+      '⚠️ This will replace ALL your existing data. Make sure you have a backup. Continue?',
       'Import',
       'Cancel'
     );
@@ -85,12 +93,13 @@ export default function Settings() {
       try {
         const result = await importData(file);
         if (result.success) {
-          showSuccessAlert('Import Successful', 'Your data has been imported successfully!');
+          showSuccessAlert('Import Successful', 'Your data has been imported successfully! The app will now reload.');
           setTimeout(() => window.location.reload(), 1500);
         } else {
           showErrorAlert('Import Failed', result.message);
         }
       } catch (error) {
+        console.error('Import error:', error);
         showErrorAlert('Import Failed', 'There was an error importing your data.');
       }
     }
@@ -110,10 +119,34 @@ export default function Settings() {
         await db.categories.clear();
         await db.transactions.clear();
         await initSampleData();
-        showSuccessAlert('Data Cleared', 'All data has been cleared and reset to default.');
+        showSuccessAlert('Data Cleared', 'All data has been cleared and reset to default. The app will now reload.');
         setTimeout(() => window.location.reload(), 1500);
       } catch (error) {
+        console.error('Clear data error:', error);
         showErrorAlert('Error', 'There was an error clearing your data.');
+      }
+    }
+  };
+
+  const handleFactoryReset = async () => {
+    const confirmed = await showConfirmAlert(
+      '⚠️ FACTORY RESET',
+      'This will DELETE EVERYTHING and reset the app to factory settings. All your data will be lost forever!',
+      'Yes, Factory Reset',
+      'Cancel'
+    );
+
+    if (confirmed) {
+      try {
+        // Close database
+        await db.close();
+        // Delete database completely
+        await Dexie.delete("ExpenseTrackerDB");
+        showSuccessAlert('Reset Complete', 'The app will now restart with clean data.');
+        setTimeout(() => window.location.reload(), 1500);
+      } catch (error) {
+        console.error('Factory reset error:', error);
+        showErrorAlert('Reset Failed', 'Please manually clear browser data from DevTools > Application > IndexedDB');
       }
     }
   };
@@ -124,52 +157,9 @@ export default function Settings() {
     return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
   };
 
-  const updateLog = [
-    {
-      version: 'v4.0.1', date: '2026-04-26', changes: [
-        "📱 Fixed bottom navigation overlapping with gesture bar",
-        "🎨 Added safe area padding for modern phones",
-        "🐛 Fixed minor bugs in debt tracking",
-        "⚡ Performance improvements",
-        "💳 Updated account balance calculation"
-      ]
-    },
-    {
-      version: 'v4.0.0', date: '2026-04-26', changes: [
-        '🎉 Complete UI redesign with Tailwind CSS',
-        '🔐 Added data encryption for security',
-        '💰 Full BDT currency support',
-        '⏰ Added time tracking for transactions',
-        '📊 Enhanced reports with insights',
-        '💳 Improved debt tracking system',
-        '📱 Better mobile experience',
-        '⚡ Performance optimizations'
-      ]
-    },
-    {
-      version: 'v3.0.0', date: '2026-03-15', changes: [
-        'Added credit/debt tracking',
-        'Multi-account support',
-        'Transfer with fees',
-        'Category management',
-        'Export/Import backup'
-      ]
-    },
-    {
-      version: 'v2.0.0', date: '2026-02-01', changes: [
-        'Added PWA support',
-        'Offline first architecture',
-        'Basic expense tracking',
-        'Income management'
-      ]
-    },
-    {
-      version: 'v1.0.0', date: '2026-01-10', changes: [
-        'Initial release',
-        'Basic expense tracking'
-      ]
-    }
-  ];
+  // Get display versions (show latest 5 initially)
+  const displayVersions = showAllVersions ? VERSION_HISTORY : VERSION_HISTORY.slice(0, 3);
+  const latestVersion = getLatestVersionInfo();
 
   return (
     <div className="space-y-4 pb-4">
@@ -186,7 +176,7 @@ export default function Settings() {
           {isEncryptionEnabled ? '🔒 Data Encrypted' : '⚠️ Encryption Disabled'}
         </div>
         <div className="text-xs mt-2 opacity-80">
-          All your data is encrypted locally for maximum security
+          All your data is stored locally and securely
         </div>
       </div>
 
@@ -230,7 +220,7 @@ export default function Settings() {
             </div>
             <div className="flex-1 text-left">
               <div className="text-sm font-medium text-gray-800">Export Backup</div>
-              <div className="text-xs text-gray-500">Save your data to a secure file</div>
+              <div className="text-xs text-gray-500">Save your data to a JSON file</div>
             </div>
           </button>
 
@@ -251,7 +241,7 @@ export default function Settings() {
             />
           </label>
 
-          {/* Clear */}
+          {/* Clear Data */}
           <button
             onClick={handleClearData}
             className="w-full flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition-colors"
@@ -261,7 +251,21 @@ export default function Settings() {
             </div>
             <div className="flex-1 text-left">
               <div className="text-sm font-medium text-red-600">Clear All Data</div>
-              <div className="text-xs text-gray-500">⚠️ Permanently delete all your data</div>
+              <div className="text-xs text-gray-500">⚠️ Delete all transactions, accounts, and categories</div>
+            </div>
+          </button>
+
+          {/* Factory Reset */}
+          <button
+            onClick={handleFactoryReset}
+            className="w-full flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition-colors"
+          >
+            <div className="bg-orange-100 p-2 rounded-xl">
+              <FiRefreshCw className="text-orange-600" size={18} />
+            </div>
+            <div className="flex-1 text-left">
+              <div className="text-sm font-medium text-orange-600">🏭 Factory Reset App</div>
+              <div className="text-xs text-gray-500">Complete reset including database structure</div>
             </div>
           </button>
 
@@ -300,28 +304,53 @@ export default function Settings() {
         <div className="px-5 py-4 bg-gradient-to-r from-purple-50 to-pink-50 border-b border-purple-100">
           <div className="flex items-center gap-2">
             <MdUpdate className="text-purple-700" size={18} />
-            <h2 className="font-semibold text-purple-800">Update Log</h2>
-            <span className="ml-auto text-xs text-purple-600">v{appVersion}</span>
+            <h2 className="font-semibold text-purple-800">Version History</h2>
+            <span className="ml-auto text-xs bg-purple-200 text-purple-800 px-2 py-1 rounded-full">
+              v{APP_VERSION}
+            </span>
           </div>
-          <p className="text-xs text-purple-600 mt-1 ml-1">What's new in the latest version</p>
+          <p className="text-xs text-purple-600 mt-1 ml-1">
+            Latest: {formatVersion(latestVersion.version)} - {latestVersion.date}
+          </p>
         </div>
         <div className="divide-y divide-gray-100 max-h-96 overflow-y-auto">
-          {updateLog.map((update, index) => (
-            <div key={index} className="p-4">
+          {displayVersions.map((update, index) => (
+            <div key={index} className="p-4 hover:bg-gray-50 transition-colors">
               <div className="flex items-center justify-between mb-2">
-                <span className="font-semibold text-gray-800">{update.version}</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-gray-800">{formatVersion(update.version)}</span>
+                  {update.version === APP_VERSION && (
+                    <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                      Current
+                    </span>
+                  )}
+                </div>
                 <span className="text-xs text-gray-400">{update.date}</span>
               </div>
               <ul className="space-y-1 text-sm text-gray-600">
-                {update.changes.map((change, changeIndex) => (
+                {update.changes.slice(0, showAllVersions ? undefined : 3).map((change, changeIndex) => (
                   <li key={changeIndex} className="flex items-start gap-2">
-                    <span className="text-blue-500 mt-0.5">•</span>
+                    <span className="text-purple-500 mt-0.5">•</span>
                     <span>{change}</span>
                   </li>
                 ))}
+                {!showAllVersions && update.changes.length > 3 && (
+                  <li className="text-xs text-purple-500 ml-4">
+                    + {update.changes.length - 3} more changes...
+                  </li>
+                )}
               </ul>
             </div>
           ))}
+
+          {VERSION_HISTORY.length > 3 && (
+            <button
+              onClick={() => setShowAllVersions(!showAllVersions)}
+              className="w-full py-3 text-center text-sm text-purple-600 hover:bg-purple-50 transition-colors font-medium"
+            >
+              {showAllVersions ? 'Show Less ▲' : `Show All Versions (${VERSION_HISTORY.length}) ▼`}
+            </button>
+          )}
         </div>
       </div>
 
@@ -334,31 +363,25 @@ export default function Settings() {
           </div>
         </div>
         <div className="p-5 text-center">
-          <div className="text-3xl mb-2">💰</div>
-          <div className="font-bold text-gray-800">Offline Expense Tracker</div>
-          <div className="text-xs text-gray-500 mt-1">Version {appVersion}</div>
-          <div className="text-xs text-gray-400 mt-2">
+          <div className="text-4xl mb-3">💰</div>
+          <div className="font-bold text-gray-800 text-lg">Offline Expense Tracker</div>
+          <div className="text-xs text-gray-500 mt-1">Version {APP_VERSION}</div>
+          <div className="text-xs text-gray-400 mt-3">
             Fully offline personal finance tracking system
           </div>
           <div className="text-xs text-gray-400 mt-1">
-            All data is stored locally and encrypted 🔒
+            All data is stored locally on your device
           </div>
-          <div className="mt-3 pt-2 border-t border-gray-100">
-            <div className="text-[10px] text-gray-400">
-              Made with ❤️ for financial freedom
+          <div className="mt-4 pt-3 border-t border-gray-100">
+            <div className="text-[11px] text-gray-400 leading-relaxed">
+              Made with ❤️ for financial freedom<br />
+              Secure • Private • Offline
             </div>
           </div>
         </div>
       </div>
 
       {showErrorLogs && <ErrorLogViewer onClose={() => setShowErrorLogs(false)} />}
-
-      {/* CSS for safe bottom area */}
-      <style>{`
-        .safe-bottom {
-          padding-bottom: env(safe-area-inset-bottom, 0px);
-        }
-      `}</style>
     </div>
   );
 }

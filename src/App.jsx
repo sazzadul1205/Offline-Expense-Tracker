@@ -22,7 +22,7 @@ import DebtTracker from './components/DebtTracker';
 import AddTransaction from './components/AddTransaction';
 
 // Update Checker
-import { useAutoUpdateCheck } from './components/UpdateChecker';
+import { useAutoUpdateCheck } from './utils/updateChecker';
 
 function App() {
   // Auto-check for updates on app start
@@ -30,8 +30,12 @@ function App() {
 
   useEffect(() => {
     const initializeDatabase = async () => {
-      await initSampleData();
-      await migrateExistingTransactions();
+      try {
+        await initSampleData();
+        await migrateExistingTransactions();
+      } catch (error) {
+        console.error('Database initialization error:', error);
+      }
     };
     initializeDatabase();
   }, []);
@@ -67,7 +71,7 @@ function App() {
         </header>
 
         {/* Main Content */}
-        <div className="px-4 py-4 max-w-md mx-auto pb-24">
+        <div className="px-4 py-4 max-w-md mx-auto pb-32">
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/add" element={<AddTransaction />} />

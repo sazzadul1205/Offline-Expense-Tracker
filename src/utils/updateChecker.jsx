@@ -1,7 +1,7 @@
-// src/components/UpdateChecker.jsx
+// src/utils/updateChecker.jsx
 import { useEffect, useState } from 'react';
 import Swal from 'sweetalert2';
-import { APP_VERSION, isNewerVersion } from '../version';  // Import from version file
+import { APP_VERSION, isNewerVersion } from '../version';
 
 // URL to your version.json file in GitHub
 const UPDATE_URL = "https://raw.githubusercontent.com/sazzadul1205/Offline-Expense-Tracker/master/updates/version.json";
@@ -24,9 +24,7 @@ export const checkForUpdates = async (showManualToast = false) => {
 
     const latest = await response.json();
 
-    // Use the imported version comparison function
     if (isNewerVersion(latest.version) && latest.updateAvailable) {
-      // Build the features list HTML
       const featuresHtml = latest.changes.map(change =>
         `<li style="margin: 8px 0; display: flex; align-items: start; gap: 8px;">
           <span style="color: #3b82f6; font-weight: bold;">✓</span>
@@ -34,7 +32,6 @@ export const checkForUpdates = async (showManualToast = false) => {
         </li>`
       ).join('');
 
-      // Show current vs new version
       const versionCompareHtml = `
         <div style="display: flex; justify-content: center; gap: 20px; margin: 15px 0;">
           <div style="text-align: center;">
@@ -100,54 +97,13 @@ export const checkForUpdates = async (showManualToast = false) => {
         });
 
         if (confirmDownload.isConfirmed) {
-          let progress = 0;
           Swal.fire({
-            title: 'Downloading Update...',
-            html: `
-              <div style="text-align: center;">
-                <div style="width: 100%; background: #e5e7eb; border-radius: 9999px; height: 8px; margin: 20px 0; overflow: hidden;">
-                  <div id="download-progress" style="width: 0%; background: #3b82f6; height: 100%; transition: width 0.3s ease;"></div>
-                </div>
-                <p id="download-status" style="color: #6b7280; font-size: 0.9em;">Preparing download...</p>
-                <p style="color: #9ca3af; font-size: 0.8em; margin-top: 15px;">Please wait while we prepare your update</p>
-              </div>
-            `,
-            allowOutsideClick: false,
-            showConfirmButton: false,
-            didOpen: () => {
-              const progressBar = document.getElementById('download-progress');
-              const statusText = document.getElementById('download-status');
-
-              const interval = setInterval(() => {
-                progress += 10;
-                if (progressBar) {
-                  progressBar.style.width = `${Math.min(progress, 90)}%`;
-                }
-                if (statusText) {
-                  if (progress < 30) statusText.textContent = 'Connecting to server...';
-                  else if (progress < 60) statusText.textContent = 'Preparing update package...';
-                  else if (progress < 90) statusText.textContent = 'Almost ready...';
-                  else statusText.textContent = 'Starting download...';
-                }
-                if (progress >= 100) clearInterval(interval);
-              }, 200);
-
-              setTimeout(() => {
-                clearInterval(interval);
-                if (progressBar) progressBar.style.width = '100%';
-                setTimeout(() => {
-                  window.open(latest.downloadUrl, '_blank');
-                  Swal.close();
-                  Swal.fire({
-                    title: 'Download Started!',
-                    text: 'Your update is now downloading.',
-                    icon: 'success',
-                    confirmButtonColor: '#3b82f6'
-                  });
-                }, 500);
-              }, 2000);
-            }
+            title: 'Download Started!',
+            text: 'Your update is now downloading.',
+            icon: 'success',
+            confirmButtonColor: '#3b82f6'
           });
+          window.open(latest.downloadUrl, '_blank');
         }
       }
       return true;
