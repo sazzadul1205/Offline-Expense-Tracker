@@ -345,7 +345,7 @@ export default function Settings() {
       {showErrorLogs && <ErrorLogViewer onClose={() => setShowErrorLogs(false)} />}
 
       {/* CSS for safe bottom area */}
-      <style jsx>{`
+      <style>{`
         .safe-bottom {
           padding-bottom: env(safe-area-inset-bottom, 0px);
         }

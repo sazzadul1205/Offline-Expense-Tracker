@@ -6,7 +6,7 @@ import Swal from 'sweetalert2';
 const CURRENT_VERSION = "4.0.0";
 
 // URL to your version.json file in GitHub
-const UPDATE_URL = "https://raw.githubusercontent.com/sazzadul1205/Offline-Expense-Tracker/main/updates/version.json";
+const UPDATE_URL = "https://raw.githubusercontent.com/sazzadul1205/Offline-Expense-Tracker/master/updates/version.json";
 
 export const checkForUpdates = async (showManualToast = false) => {
   try {
@@ -108,58 +108,46 @@ export const checkForUpdates = async (showManualToast = false) => {
             allowOutsideClick: false,
             showConfirmButton: false,
             didOpen: () => {
-              // Simulate progress
+              let progress = 0;
+
+              const progressBar = document.getElementById('download-progress');
+              const statusText = document.getElementById('download-status');
+
               const interval = setInterval(() => {
                 progress += 10;
-                const progressBar = document.getElementById('download-progress');
-                const statusText = document.getElementById('download-status');
+
                 if (progressBar) {
                   progressBar.style.width = `${Math.min(progress, 90)}%`;
                 }
+
                 if (statusText) {
                   if (progress < 30) statusText.textContent = 'Connecting to server...';
                   else if (progress < 60) statusText.textContent = 'Preparing update package...';
                   else if (progress < 90) statusText.textContent = 'Almost ready...';
                   else statusText.textContent = 'Starting download...';
                 }
+
                 if (progress >= 100) {
                   clearInterval(interval);
                 }
               }, 200);
 
-              // Actually open the download after 2 seconds
               setTimeout(() => {
                 clearInterval(interval);
+
                 if (progressBar) {
                   progressBar.style.width = '100%';
                 }
+
                 setTimeout(() => {
                   window.open(latest.downloadUrl, '_blank');
-                  downloadModal.close();
+                  Swal.close();
 
-                  // Show success message
                   Swal.fire({
                     title: 'Download Started!',
-                    html: `
-                      <p>Your update is now downloading.</p>
-                      <div style="background: #f0fdf4; padding: 12px; border-radius: 8px; margin: 15px 0;">
-                        <p style="color: #166534; font-size: 0.9em; margin: 0;">
-                          📱 <strong>Next Steps:</strong><br>
-                          1. Wait for download to complete<br>
-                          2. Open the downloaded APK file<br>
-                          3. Tap "Install" (allow from unknown sources)<br>
-                          4. Open the updated app!
-                        </p>
-                      </div>
-                      <p style="color: #6b7280; font-size: 0.8em;">
-                        Your existing data will be automatically preserved.
-                      </p>
-                    `,
+                    text: 'Your update is now downloading.',
                     icon: 'success',
-                    confirmButtonColor: '#3b82f6',
-                    confirmButtonText: 'Got it!',
-                    timer: 5000,
-                    timerProgressBar: true
+                    confirmButtonColor: '#3b82f6'
                   });
                 }, 500);
               }, 2000);
