@@ -1,173 +1,148 @@
 // src/components/Accounts.jsx
 
-// React
 import { useState, useEffect } from 'react';
-
-// Database
 import { db } from '../db/database';
 
-// Icons
-import { MdAccountBalance, MdSavings, MdAccountBalanceWallet } from 'react-icons/md';
-import { FiPlus, FiTrash2, FiPhone, FiCreditCard, FiHome, FiDollarSign, FiAlertCircle, FiX } from 'react-icons/fi';
+import {
+  MdAccountBalance,
+  MdSavings,
+  MdAccountBalanceWallet
+} from 'react-icons/md';
 
-// Utils
-import { formatCurrency, CURRENCY_SYMBOL } from '../utils/currency';
+import {
+  FiPlus,
+  FiTrash2,
+  FiPhone,
+  FiCreditCard,
+  FiDollarSign
+} from 'react-icons/fi';
+
+import { formatCurrency } from '../utils/currency';
 import { showErrorAlert, showToast, showConfirmAlert } from '../utils/alerts';
 
 export default function Accounts() {
 
-  // State
   const [accounts, setAccounts] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [totalBalance, setTotalBalance] = useState(0);
-  const [newAccount, setNewAccount] = useState({ name: '', type: 'cash', balance: 0 });
 
-  // Effects
+  const [newAccount, setNewAccount] = useState({
+    name: '',
+    type: 'cash',
+    balance: ''
+  });
+
   useEffect(() => {
     loadAccounts();
   }, []);
 
-  // Load accounts
   const loadAccounts = async () => {
-    const acs = await db.accounts.toArray();
-    setAccounts(acs);
-    const total = acs.reduce((sum, acc) => sum + acc.balance, 0);
+    const data = await db.accounts.toArray();
+    setAccounts(data);
+
+    const total = data.reduce((s, a) => s + a.balance, 0);
     setTotalBalance(total);
   };
 
-  // Add account
   const handleAddAccount = async () => {
     if (!newAccount.name.trim()) {
-      showErrorAlert('Validation Error', 'Please enter account name');
+      showErrorAlert('Error', 'Enter account name');
       return;
     }
+
     await db.accounts.add(newAccount);
+
     setNewAccount({ name: '', type: 'cash', balance: 0 });
     setShowForm(false);
     await loadAccounts();
-    showToast('Account added successfully!', 'success');
+
+    showToast('Account created', 'success');
   };
 
-  // Delete account
   const handleDeleteAccount = async (id) => {
-    const hasTransactions = await db.transactions
-      .where('accountId')
-      .equals(id)
-      .or('fromAccountId')
-      .equals(id)
-      .or('toAccountId')
-      .equals(id)
-      .count();
+    const confirmed = await showConfirmAlert(
+      'Delete account?',
+      'This action cannot be undone',
+      'Delete',
+      'Cancel'
+    );
 
-    if (hasTransactions > 0) {
-      showErrorAlert('Cannot Delete', 'Cannot delete account with transaction history');
-      return;
-    }
+    if (!confirmed) return;
 
-    const confirmed = await showConfirmAlert('Delete Account', 'Are you sure you want to delete this account?', 'Delete', 'Cancel');
-    if (confirmed) {
-      await db.accounts.delete(id);
-      await loadAccounts();
-      showToast('Account deleted successfully', 'success');
-    }
+    await db.accounts.delete(id);
+    await loadAccounts();
+    showToast('Account removed', 'success');
   };
 
-  // Get account type icon
-  const getTypeIcon = (type) => {
-    const icons = {
-      cash: <MdAccountBalanceWallet size={24} />,
-      bkash: <FiPhone size={24} />,
-      card: <FiCreditCard size={24} />,
-      bank: <MdAccountBalance size={24} />
-    };
-    return icons[type] || <MdAccountBalanceWallet size={24} />;
-  };
-
-  // Get account type color - FIXED with complete classes
-  const getTypeColorClass = (type) => {
-    const colors = {
-      cash: 'bg-emerald-100 text-emerald-700',
-      bkash: 'bg-pink-100 text-pink-700',
-      card: 'bg-blue-100 text-blue-700',
-      bank: 'bg-purple-100 text-purple-700'
-    };
-    return colors[type] || 'bg-gray-100 text-gray-700';
-  };
-
-  // Get account type gradient - FIXED with complete classes
-  const getTypeGradientClass = (type) => {
-    const gradients = {
-      cash: 'from-emerald-500 to-emerald-600',
-      bkash: 'from-pink-500 to-pink-600',
-      card: 'from-blue-500 to-blue-600',
-      bank: 'from-purple-500 to-purple-600'
-    };
-    return gradients[type] || 'from-gray-500 to-gray-600';
-  };
-
-  // Account types with complete classes - FIXED
-  const accountTypes = [
-    { id: 'cash', label: 'Cash', icon: MdAccountBalanceWallet, activeClass: 'bg-emerald-500 text-white shadow-md scale-95', inactiveClass: 'bg-gray-100 text-gray-600 hover:scale-105', iconColor: 'text-emerald-600' },
-    { id: 'bkash', label: 'bKash', icon: FiPhone, activeClass: 'bg-pink-500 text-white shadow-md scale-95', inactiveClass: 'bg-gray-100 text-gray-600 hover:scale-105', iconColor: 'text-pink-600' },
-    { id: 'card', label: 'Card', icon: FiCreditCard, activeClass: 'bg-blue-500 text-white shadow-md scale-95', inactiveClass: 'bg-gray-100 text-gray-600 hover:scale-105', iconColor: 'text-blue-600' },
-    { id: 'bank', label: 'Bank', icon: MdAccountBalance, activeClass: 'bg-purple-500 text-white shadow-md scale-95', inactiveClass: 'bg-gray-100 text-gray-600 hover:scale-105', iconColor: 'text-purple-600' }
+  const types = [
+    { id: 'cash', label: 'Cash', icon: MdAccountBalanceWallet },
+    { id: 'bkash', label: 'bKash', icon: FiPhone },
+    { id: 'card', label: 'Card', icon: FiCreditCard },
+    { id: 'bank', label: 'Bank', icon: MdAccountBalance }
   ];
 
+  const input =
+    "w-full border border-gray-200 rounded-xl px-4 py-2.5 " +
+    "focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500";
+
   return (
-    <div className="space-y-4 pb-4">
-      {/* Total Balance Card */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-5 text-white shadow-lg">
-        <div className="flex items-center justify-between mb-2">
-          <div className="text-sm font-medium opacity-90">Total Balance</div>
-          <div className="bg-white/20 rounded-full p-2">
-            <FiDollarSign size={20} />
-          </div>
+    <div className="space-y-4 pb-6">
+
+      {/* TOTAL */}
+      <div className="bg-blue-600 text-white rounded-2xl p-5">
+        <div className="flex justify-between items-center">
+          <div className="text-sm opacity-80">Total Balance</div>
+          <FiDollarSign />
         </div>
-        <div className="text-3xl font-bold">{formatCurrency(totalBalance)}</div>
-        <div className="text-xs mt-2 opacity-75">
-          Across {accounts.length} account{accounts.length !== 1 ? 's' : ''}
+        <div className="text-3xl font-bold mt-2">
+          {formatCurrency(totalBalance)}
+        </div>
+        <div className="text-xs opacity-70 mt-1">
+          {accounts.length} accounts
         </div>
       </div>
 
-      {/* Add Account Button */}
+      {/* ADD BUTTON */}
       <button
         onClick={() => setShowForm(!showForm)}
-        className="w-full bg-white border-2 border-dashed border-blue-300 text-blue-600 py-3 rounded-xl font-semibold hover:bg-blue-50 transition-all flex items-center justify-center gap-2"
+        className="w-full border border-dashed border-blue-300 text-blue-600 rounded-xl py-3 flex items-center justify-center gap-2 hover:bg-blue-50 transition"
       >
-        <FiPlus size={20} />
-        {showForm ? 'Cancel' : 'Add New Account'}
+        <FiPlus />
+        {showForm ? 'Cancel' : 'Add Account'}
       </button>
 
-      {/* Add Account Form - FIXED button mapping */}
+      {/* FORM */}
       {showForm && (
-        <div className="bg-white rounded-2xl shadow-lg p-5 animate-fade-in">
-          <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-            <FiPlus className="text-blue-600" />
-            New Account Details
-          </h3>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-3">
 
           <input
-            type="text"
-            placeholder="Account name (e.g., Savings, Salary)"
+            className={input}
+            placeholder="Account name"
             value={newAccount.name}
-            onChange={(e) => setNewAccount({ ...newAccount, name: e.target.value })}
-            className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 mb-3 focus:border-blue-500 focus:outline-none transition-colors"
+            onChange={(e) =>
+              setNewAccount({ ...newAccount, name: e.target.value })
+            }
           />
 
-          <div className="grid grid-cols-4 gap-2 mb-3">
-            {accountTypes.map(type => {
-              const Icon = type.icon;
-              const isSelected = newAccount.type === type.id;
+          {/* TYPE */}
+          <div className="grid grid-cols-4 gap-2">
+            {types.map(t => {
+              const Icon = t.icon;
+              const active = newAccount.type === t.id;
+
               return (
                 <button
-                  key={type.id}
+                  key={t.id}
                   type="button"
-                  onClick={() => setNewAccount({ ...newAccount, type: type.id })}
-                  className={`flex flex-col items-center gap-1 py-2 rounded-xl transition-all ${isSelected ? type.activeClass : type.inactiveClass
-                    }`}
+                  onClick={() =>
+                    setNewAccount({ ...newAccount, type: t.id })
+                  }
+                  className={`py-2 rounded-xl flex flex-col items-center text-xs transition
+                    ${active ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'}
+                  `}
                 >
-                  <Icon size={18} className={isSelected ? 'text-white' : type.iconColor} />
-                  <span className="text-xs">{type.label}</span>
+                  <Icon size={16} />
+                  {t.label}
                 </button>
               );
             })}
@@ -175,92 +150,83 @@ export default function Accounts() {
 
           <input
             type="number"
-            step="1"
-            placeholder="Initial balance (BDT)"
+            className={input}
+            placeholder="Initial balance"
             value={newAccount.balance}
-            onChange={(e) => setNewAccount({ ...newAccount, balance: parseFloat(e.target.value) || 0 })}
-            className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 mb-3 focus:border-blue-500 focus:outline-none"
+            onChange={(e) =>
+              setNewAccount({
+                ...newAccount,
+                balance: e.target.value
+              })
+            }
           />
 
-          <div className="flex gap-2">
-            <button
-              onClick={handleAddAccount}
-              className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white py-3 rounded-xl font-semibold hover:shadow-lg transition-all"
-            >
-              Save Account
-            </button>
-            <button
-              onClick={() => setShowForm(false)}
-              className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-200 transition-all"
-            >
-              Cancel
-            </button>
-          </div>
+          <button
+            onClick={handleAddAccount}
+            className="w-full bg-blue-600 text-white py-3 rounded-xl font-medium hover:bg-blue-700 transition"
+          >
+            Save Account
+          </button>
+
         </div>
       )}
 
-      {/* Accounts List - FIXED with static classes */}
-      {accounts.map(acc => {
-        const Icon = getTypeIcon(acc.type);
-        const gradientClass = getTypeGradientClass(acc.type);
-        const typeColorClass = getTypeColorClass(acc.type);
+      {/* ACCOUNTS LIST */}
+      <div className="space-y-3">
 
-        return (
-          <div
-            key={acc.id}
-            className="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-lg transition-shadow"
-          >
-            <div className={`bg-gradient-to-r ${gradientClass} p-1`} />
-            <div className="p-4">
-              <div className="flex justify-between items-start">
-                <div className="flex items-center gap-3">
-                  <div className={`p-2.5 rounded-xl ${typeColorClass}`}>
-                    {Icon}
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-800 text-lg">{acc.name}</h3>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${typeColorClass} mt-1 inline-block`}>
-                      {acc.type.toUpperCase()}
-                    </span>
+        {accounts.map(acc => {
+          const Icon = types.find(t => t.id === acc.type)?.icon || MdAccountBalanceWallet;
+
+          return (
+            <div
+              key={acc.id}
+              className="bg-white rounded-2xl border border-gray-100 p-4 flex justify-between items-center"
+            >
+
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-gray-100">
+                  <Icon size={20} />
+                </div>
+
+                <div>
+                  <div className="font-medium">{acc.name}</div>
+                  <div className="text-xs text-gray-400 uppercase">
+                    {acc.type}
                   </div>
                 </div>
+              </div>
+
+              <div className="text-right">
+                <div className="font-semibold">
+                  {formatCurrency(acc.balance)}
+                </div>
+
                 <button
                   onClick={() => handleDeleteAccount(acc.id)}
-                  className="text-red-400 hover:text-red-600 p-2 hover:bg-red-50 rounded-full transition-colors"
+                  className="text-xs text-red-500 mt-1"
                 >
-                  <FiTrash2 size={18} />
+                  Delete
                 </button>
               </div>
 
-              <div className="mt-3 pt-3 border-t border-gray-100">
-                <div className="flex justify-between items-center">
-                  <div className="text-xs text-gray-500">Current Balance</div>
-                  <div className="text-2xl font-bold text-gray-800">
-                    {formatCurrency(acc.balance)}
-                  </div>
-                </div>
-              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
 
-      {/* Empty State */}
+      </div>
+
+      {/* EMPTY */}
       {accounts.length === 0 && !showForm && (
-        <div className="bg-white rounded-2xl shadow-md p-10 text-center">
-          <div className="bg-blue-50 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4">
-            <MdAccountBalanceWallet className="text-blue-500" size={32} />
+        <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
+          <div className="text-gray-400 mb-2">
+            No accounts found
           </div>
-          <div className="text-gray-800 font-semibold text-lg mb-1">No Accounts Yet</div>
-          <div className="text-gray-500 text-sm mb-4">Add your first account to start tracking</div>
-          <button
-            onClick={() => setShowForm(true)}
-            className="bg-blue-600 text-white px-6 py-2 rounded-xl font-medium hover:bg-blue-700 transition-colors"
-          >
-            Create Account
-          </button>
+          <div className="text-sm text-gray-500">
+            Create your first account to start tracking
+          </div>
         </div>
       )}
+
     </div>
   );
 }

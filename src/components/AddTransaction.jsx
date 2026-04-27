@@ -1,34 +1,47 @@
 // src/components/AddTransaction.jsx
 
-// React
 import { useState, useEffect } from 'react';
-
-// Database
 import { db } from '../db/database';
 
-// Utils
 import { applyTransaction } from '../utils/accountingRules';
-import { formatCurrency, CURRENCY_SYMBOL } from '../utils/currency';
+import { formatCurrency } from '../utils/currency';
 import { showToast, showErrorAlert, showLoadingAlert, closeLoadingAlert } from '../utils/alerts';
 import { logError, ERROR_CATEGORIES, ERROR_LEVELS } from '../utils/errorLogger';
 
-// Icons
-import { MdOutlinePersonAdd, MdOutlineNotes } from 'react-icons/md';
-import { FiArrowDownCircle, FiArrowUpCircle, FiRepeat, FiCreditCard, FiDollarSign, FiCalendar, FiClock, FiUser, FiTag, FiInfo, FiAlertCircle, FiCheckCircle, FiArrowRight } from 'react-icons/fi';
+import {
+  MdOutlineNotes
+} from 'react-icons/md';
+
+import {
+  FiArrowDownCircle,
+  FiArrowUpCircle,
+  FiRepeat,
+  FiCreditCard,
+  FiDollarSign,
+  FiCalendar,
+  FiClock,
+  FiUser,
+  FiTag,
+  FiInfo,
+  FiCheckCircle,
+  FiArrowRight
+} from 'react-icons/fi';
 
 export default function AddTransaction() {
 
-  // State
   const [accounts, setAccounts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Form
   const [formData, setFormData] = useState({
     type: 'expense',
     amount: '',
     date: new Date().toISOString().split('T')[0],
-    time: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
+    time: new Date().toLocaleTimeString('en-US', {
+      hour12: false,
+      hour: '2-digit',
+      minute: '2-digit'
+    }),
     accountId: '',
     fromAccountId: '',
     toAccountId: '',
@@ -41,368 +54,241 @@ export default function AddTransaction() {
     fee: ''
   });
 
-  // Effects
   useEffect(() => {
     loadData();
   }, []);
 
-  // Load data from IndexedDB
   const loadData = async () => {
     try {
-      const accountsList = await db.accounts.toArray();
-      const categoriesList = await db.categories.toArray();
-      setAccounts(accountsList);
-      setCategories(categoriesList);
-      if (accountsList[0]) setFormData(prev => ({ ...prev, accountId: accountsList[0].id }));
-    } catch (error) {
-      console.error('Failed to load data:', error);
-      await logError(error, ERROR_CATEGORIES.DATABASE, ERROR_LEVELS.ERROR, { action: 'loadData' });
-      showErrorAlert('Loading Error', 'Failed to load accounts and categories. Please refresh the page.');
-    }
-  };
+      const a = await db.accounts.toArray();
+      const c = await db.categories.toArray();
 
-  // Form handlers
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+      setAccounts(a);
+      setCategories(c);
 
-    if (!formData.amount || parseFloat(formData.amount) <= 0) {
-      showErrorAlert('Validation Error', 'Please enter a valid amount');
-      return;
-    }
-
-    setIsSubmitting(true);
-    showLoadingAlert('Processing', 'Adding your transaction...');
-
-    try {
-      const dateTime = new Date(`${formData.date}T${formData.time}`);
-      const timestamp = dateTime.getTime();
-
-      const transaction = {
-        ...formData,
-        amount: parseFloat(formData.amount),
-        fee: formData.fee ? parseFloat(formData.fee) : 0,
-        date: formData.date,
-        time: formData.time,
-        timestamp: timestamp,
-        type: formData.type
-      };
-
-      if (transaction.type === 'credit') {
-        transaction.status = 'pending';
+      if (a[0]) {
+        setFormData(prev => ({ ...prev, accountId: a[0].id }));
       }
-
-      const txId = await db.transactions.add(transaction);
-      transaction.id = txId;
-
-      const result = await applyTransaction(transaction, true);
-
-      closeLoadingAlert();
-
-      if (result.success) {
-        showToast('Transaction added successfully!', 'success');
-        resetForm();
-      } else {
-        await db.transactions.delete(txId);
-        showErrorAlert('Transaction Failed', result.message);
-      }
-    } catch (error) {
-      closeLoadingAlert();
-      console.error('Transaction error:', error);
-      await logError(error, ERROR_CATEGORIES.TRANSACTION, ERROR_LEVELS.ERROR, { formData });
-      showErrorAlert('Error', 'Failed to add transaction. Please try again.');
-    } finally {
-      setIsSubmitting(false);
+    } catch (e) {
+      console.error(e);
+      showErrorAlert('Error', 'Failed to load data');
     }
   };
 
-  // Reset form
-  const resetForm = () => {
-    setFormData({
-      type: 'expense',
-      amount: '',
-      date: new Date().toISOString().split('T')[0],
-      time: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
-      accountId: accounts[0]?.id || '',
-      fromAccountId: '',
-      toAccountId: '',
-      categoryId: '',
-      status: 'paid',
-      direction: 'owe_me',
-      person: '',
-      title: '',
-      details: '',
-      fee: ''
-    });
-  };
-
-  // Transaction type buttons - FIXED with complete classes
   const typeButtons = [
-    {
-      id: 'expense',
-      label: 'Expense',
-      icon: FiArrowDownCircle,
-      activeClass: 'bg-red-500 text-white shadow-md scale-95',
-      inactiveClass: 'bg-red-50 text-gray-700 hover:scale-105',
-      iconColor: 'text-red-500'
-    },
-    {
-      id: 'income',
-      label: 'Income',
-      icon: FiArrowUpCircle,
-      activeClass: 'bg-green-500 text-white shadow-md scale-95',
-      inactiveClass: 'bg-green-50 text-gray-700 hover:scale-105',
-      iconColor: 'text-green-500'
-    },
-    {
-      id: 'transfer',
-      label: 'Transfer',
-      icon: FiRepeat,
-      activeClass: 'bg-blue-500 text-white shadow-md scale-95',
-      inactiveClass: 'bg-blue-50 text-gray-700 hover:scale-105',
-      iconColor: 'text-blue-500'
-    },
-    {
-      id: 'credit',
-      label: 'Credit',
-      icon: FiCreditCard,
-      activeClass: 'bg-purple-500 text-white shadow-md scale-95',
-      inactiveClass: 'bg-purple-50 text-gray-700 hover:scale-105',
-      iconColor: 'text-purple-500'
-    }
+    { id: 'expense', label: 'Expense', icon: FiArrowDownCircle, color: 'red' },
+    { id: 'income', label: 'Income', icon: FiArrowUpCircle, color: 'green' },
+    { id: 'transfer', label: 'Transfer', icon: FiRepeat, color: 'blue' },
+    { id: 'credit', label: 'Credit', icon: FiCreditCard, color: 'purple' }
   ];
 
+  const inputClass =
+    "w-full rounded-xl px-3 py-2.5 border border-gray-200 " +
+    "focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition";
+
+  const section =
+    "bg-white rounded-2xl shadow-sm border border-gray-100 p-4 space-y-3";
+
   return (
-    <div className="pb-4">
-      <form onSubmit={handleSubmit} className="space-y-5">
-        {/* Transaction Type Selector - FIXED */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
-          <label className="block text-gray-700 font-semibold mb-3 text-sm">Transaction Type</label>
-          <div className="grid grid-cols-4 gap-2">
-            {typeButtons.map(type => {
-              const Icon = type.icon;
-              const isActive = formData.type === type.id;
-              return (
-                <button
-                  key={type.id}
-                  type="button"
-                  onClick={() => setFormData({ ...formData, type: type.id })}
-                  className={`flex flex-col items-center gap-1 py-3 px-2 rounded-xl transition-all duration-200 ${isActive ? type.activeClass : type.inactiveClass
-                    }`}
-                >
-                  <Icon size={20} className={isActive ? 'text-white' : type.iconColor} />
-                  <span className="text-xs font-medium capitalize">{type.label}</span>
-                </button>
-              );
-            })}
-          </div>
+    <form className="space-y-4">
+
+      {/* TYPE SELECTOR */}
+      <div className={section}>
+        <div className="text-sm font-semibold text-gray-700">
+          Transaction Type
         </div>
 
-        {/* Amount, Date & Time */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
-          <div className="grid grid-cols-2 gap-3 mb-3">
-            <div>
-              <label className="block text-gray-700 font-semibold mb-2 text-sm flex items-center gap-1">
-                <FiDollarSign size={16} className="text-blue-500" />
-                Amount (BDT)
-              </label>
-              <input
-                type="number"
-                step="1"
-                required
-                value={formData.amount}
-                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                className="w-full border-2 border-gray-200 rounded-xl px-3 py-2.5 text-lg font-semibold focus:border-blue-500 focus:outline-none transition-colors"
-                placeholder="0"
-              />
-            </div>
-            <div>
-              <label className="block text-gray-700 font-semibold mb-2 text-sm flex items-center gap-1">
-                <FiCalendar size={16} className="text-blue-500" />
-                Date
-              </label>
-              <input
-                type="date"
-                required
-                value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                className="w-full border-2 border-gray-200 rounded-xl px-3 py-2.5 focus:border-blue-500 focus:outline-none transition-colors"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="block text-gray-700 font-semibold mb-2 text-sm flex items-center gap-1">
-              <FiClock size={16} className="text-blue-500" />
-              Time
-            </label>
-            <input
-              type="time"
-              required
-              value={formData.time}
-              onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-              className="w-full border-2 border-gray-200 rounded-xl px-3 py-2.5 focus:border-blue-500 focus:outline-none transition-colors"
-            />
-          </div>
-        </div>
+        <div className="grid grid-cols-4 gap-2">
+          {typeButtons.map(t => {
+            const Icon = t.icon;
+            const active = formData.type === t.id;
 
-        {/* Account Selection */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
-          {formData.type === 'transfer' ? (
-            <>
-              <label className="block text-gray-700 font-semibold mb-3 text-sm flex items-center gap-1">
-                <FiArrowRight size={16} className="text-blue-500" />
-                Transfer Between Accounts
-              </label>
-              <div className="space-y-3">
-                <select
-                  required
-                  value={formData.fromAccountId}
-                  onChange={(e) => setFormData({ ...formData, fromAccountId: e.target.value })}
-                  className="w-full border-2 border-gray-200 rounded-xl px-3 py-2.5 focus:border-blue-500 focus:outline-none"
-                >
-                  <option value="">From account</option>
-                  {accounts.map(acc => (
-                    <option key={acc.id} value={acc.id}>{acc.name} ({formatCurrency(acc.balance)})</option>
-                  ))}
-                </select>
-                <FiArrowRight className="text-gray-400 mx-auto" size={20} />
-                <select
-                  required
-                  value={formData.toAccountId}
-                  onChange={(e) => setFormData({ ...formData, toAccountId: e.target.value })}
-                  className="w-full border-2 border-gray-200 rounded-xl px-3 py-2.5 focus:border-blue-500 focus:outline-none"
-                >
-                  <option value="">To account</option>
-                  {accounts.map(acc => (
-                    <option key={acc.id} value={acc.id}>{acc.name}</option>
-                  ))}
-                </select>
-              </div>
-            </>
-          ) : (
-            <div>
-              <label className="block text-gray-700 font-semibold mb-2 text-sm flex items-center gap-1">
-                <FiInfo size={16} className="text-blue-500" />
-                Account
-              </label>
-              <select
-                required={formData.type !== 'credit'}
-                value={formData.accountId}
-                onChange={(e) => setFormData({ ...formData, accountId: e.target.value })}
-                className="w-full border-2 border-gray-200 rounded-xl px-3 py-2.5 focus:border-blue-500 focus:outline-none"
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setFormData({ ...formData, type: t.id })}
+                className={`
+                  flex flex-col items-center justify-center gap-1
+                  py-3 rounded-xl transition-all
+                  ${active
+                    ? `bg-${t.color}-500 text-white shadow-md scale-[0.98]`
+                    : "bg-gray-50 hover:bg-gray-100 text-gray-600"
+                  }
+                `}
               >
-                {accounts.map(acc => (
-                  <option key={acc.id} value={acc.id}>{acc.name} ({formatCurrency(acc.balance)})</option>
-                ))}
-              </select>
-            </div>
-          )}
+                <Icon size={18} />
+                <span className="text-xs font-medium">{t.label}</span>
+              </button>
+            );
+          })}
         </div>
+      </div>
 
-        {/* Credit specific fields */}
-        {formData.type === 'credit' && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 space-y-3">
-            <label className="block text-gray-700 font-semibold text-sm">Credit Details</label>
-            <select
-              value={formData.direction}
-              onChange={(e) => setFormData({ ...formData, direction: e.target.value })}
-              className="w-full border-2 border-gray-200 rounded-xl px-3 py-2.5 focus:border-blue-500 focus:outline-none"
-            >
-              <option value="owe_me">💰 They owe me (I lent money)</option>
-              <option value="i_owe">💸 I owe them (I borrowed money)</option>
-            </select>
-            <div className="relative">
-              <FiUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-              <input
-                type="text"
-                required
-                value={formData.person}
-                onChange={(e) => setFormData({ ...formData, person: e.target.value })}
-                className="w-full border-2 border-gray-200 rounded-xl pl-10 pr-3 py-2.5 focus:border-blue-500 focus:outline-none"
-                placeholder="Person's name"
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Category for expense/income */}
-        {(formData.type === 'expense' || formData.type === 'income') && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
-            <label className="block text-gray-700 font-semibold mb-2 text-sm flex items-center gap-1">
-              <FiTag size={16} className="text-blue-500" />
-              Category
+      {/* AMOUNT + DATE */}
+      <div className={section}>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs text-gray-500 flex items-center gap-1 mb-1">
+              <FiDollarSign size={14} /> Amount
             </label>
-            <select
-              value={formData.categoryId}
-              onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-              className="w-full border-2 border-gray-200 rounded-xl px-3 py-2.5 focus:border-blue-500 focus:outline-none"
-            >
-              <option value="">Select category</option>
-              {categories.filter(c => c.type === formData.type).map(cat => (
-                <option key={cat.id} value={cat.id}>{cat.name}</option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        {/* Transfer Fee */}
-        {formData.type === 'transfer' && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
-            <label className="block text-gray-700 font-semibold mb-2 text-sm">Transfer Fee (BDT - optional)</label>
             <input
+              className={inputClass + " text-lg font-semibold"}
               type="number"
-              step="1"
-              value={formData.fee}
-              onChange={(e) => setFormData({ ...formData, fee: e.target.value })}
-              className="w-full border-2 border-gray-200 rounded-xl px-3 py-2.5 focus:border-blue-500 focus:outline-none"
+              value={formData.amount}
+              onChange={(e) =>
+                setFormData({ ...formData, amount: e.target.value })
+              }
               placeholder="0"
             />
           </div>
-        )}
 
-        {/* Notes Section */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 space-y-3">
-          <label className="block text-gray-700 font-semibold text-sm flex items-center gap-1">
-            <MdOutlineNotes size={18} className="text-blue-500" />
-            Notes & Details
-          </label>
-          <input
-            type="text"
-            value={formData.title}
-            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-            className="w-full border-2 border-gray-200 rounded-xl px-3 py-2.5 focus:border-blue-500 focus:outline-none"
-            placeholder="Title (e.g., Grocery shopping)"
-          />
-          <textarea
-            value={formData.details}
-            onChange={(e) => setFormData({ ...formData, details: e.target.value })}
-            className="w-full border-2 border-gray-200 rounded-xl px-3 py-2.5 focus:border-blue-500 focus:outline-none resize-none"
-            rows="3"
-            placeholder="Additional notes, references, or reminders..."
-          />
+          <div>
+            <label className="text-xs text-gray-500 flex items-center gap-1 mb-1">
+              <FiCalendar size={14} /> Date
+            </label>
+            <input
+              className={inputClass}
+              type="date"
+              value={formData.date}
+              onChange={(e) =>
+                setFormData({ ...formData, date: e.target.value })
+              }
+            />
+          </div>
         </div>
 
-        {/* Submit Button */}
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className={`w-full py-3.5 rounded-xl font-semibold text-white transition-all duration-200 flex items-center justify-center gap-2 ${isSubmitting
-              ? 'bg-gray-400 cursor-not-allowed'
-              : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:shadow-lg active:scale-98'
-            }`}
-        >
-          {isSubmitting ? (
-            <>
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              Processing...
-            </>
-          ) : (
-            <>
-              <FiCheckCircle size={20} />
-              Add Transaction
-            </>
-          )}
-        </button>
-      </form>
-    </div>
+        <div>
+          <label className="text-xs text-gray-500 flex items-center gap-1 mb-1">
+            <FiClock size={14} /> Time
+          </label>
+          <input
+            className={inputClass}
+            type="time"
+            value={formData.time}
+            onChange={(e) =>
+              setFormData({ ...formData, time: e.target.value })
+            }
+          />
+        </div>
+      </div>
+
+      {/* ACCOUNT */}
+      <div className={section}>
+        {formData.type === 'transfer' ? (
+          <>
+            <div className="text-sm font-semibold">Transfer Accounts</div>
+
+            <select
+              className={inputClass}
+              value={formData.fromAccountId}
+              onChange={(e) =>
+                setFormData({ ...formData, fromAccountId: e.target.value })
+              }
+            >
+              <option>From account</option>
+              {accounts.map(a => (
+                <option key={a.id} value={a.id}>
+                  {a.name} ({formatCurrency(a.balance)})
+                </option>
+              ))}
+            </select>
+
+            <div className="flex justify-center text-gray-400">
+              <FiArrowRight />
+            </div>
+
+            <select
+              className={inputClass}
+              value={formData.toAccountId}
+              onChange={(e) =>
+                setFormData({ ...formData, toAccountId: e.target.value })
+              }
+            >
+              <option>To account</option>
+              {accounts.map(a => (
+                <option key={a.id} value={a.id}>
+                  {a.name}
+                </option>
+              ))}
+            </select>
+          </>
+        ) : (
+          <select
+            className={inputClass}
+            value={formData.accountId}
+            onChange={(e) =>
+              setFormData({ ...formData, accountId: e.target.value })
+            }
+          >
+            <option>Select account</option>
+            {accounts.map(a => (
+              <option key={a.id} value={a.id}>
+                {a.name} ({formatCurrency(a.balance)})
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
+
+      {/* CATEGORY */}
+      {(formData.type === 'expense' || formData.type === 'income') && (
+        <div className={section}>
+          <select
+            className={inputClass}
+            value={formData.categoryId}
+            onChange={(e) =>
+              setFormData({ ...formData, categoryId: e.target.value })
+            }
+          >
+            <option>Select category</option>
+            {categories
+              .filter(c => c.type === formData.type)
+              .map(c => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+          </select>
+        </div>
+      )}
+
+      {/* NOTES */}
+      <div className={section}>
+        <input
+          className={inputClass}
+          placeholder="Title"
+          value={formData.title}
+          onChange={(e) =>
+            setFormData({ ...formData, title: e.target.value })
+          }
+        />
+
+        <textarea
+          className={inputClass}
+          rows={3}
+          placeholder="Details"
+          value={formData.details}
+          onChange={(e) =>
+            setFormData({ ...formData, details: e.target.value })
+          }
+        />
+      </div>
+
+      {/* SUBMIT */}
+      <button
+        type="submit"
+        className="
+          w-full py-3 rounded-xl font-semibold text-white
+          bg-gradient-to-r from-blue-600 to-blue-700
+          shadow-md hover:shadow-lg active:scale-[0.98]
+          transition
+        "
+      >
+        <FiCheckCircle className="inline mr-2" />
+        Add Transaction
+      </button>
+
+    </form>
   );
 }
