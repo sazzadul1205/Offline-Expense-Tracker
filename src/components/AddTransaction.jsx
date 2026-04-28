@@ -7,7 +7,7 @@ import { applyTransaction } from '../utils/accountingRules';
 import { formatCurrency } from '../utils/currency';
 import { showToast, showErrorAlert, showLoadingAlert, closeLoadingAlert } from '../utils/alerts';
 import { logError, ERROR_CATEGORIES, ERROR_LEVELS } from '../utils/errorLogger';
-import { notifyDataChanged } from '../utils/refresh';
+import { notifyDataChanged, useDataRefresh } from '../utils/refresh';
 
 import {
   FiArrowDownCircle,
@@ -49,41 +49,7 @@ export default function AddTransaction() {
     fee: ''
   });
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  // Reset form when component mounts (to clear any stale data)
-  useEffect(() => {
-    if (!isInitialLoad && accounts.length > 0) {
-      resetForm();
-    }
-    setIsInitialLoad(false);
-  }, [accounts]);
-
-  const resetForm = () => {
-    setFormData({
-      type: 'expense',
-      amount: '',
-      date: new Date().toISOString().split('T')[0],
-      time: new Date().toLocaleTimeString('en-US', {
-        hour12: false,
-        hour: '2-digit',
-        minute: '2-digit'
-      }),
-      accountId: accounts.length > 0 ? accounts[0].id : '',
-      fromAccountId: accounts.length > 0 ? accounts[0].id : '',
-      toAccountId: accounts.length > 1 ? accounts[1].id : (accounts.length > 0 ? accounts[0].id : ''),
-      categoryId: '',
-      status: 'paid',
-      direction: 'owe_me',
-      person: '',
-      title: '',
-      details: '',
-      fee: ''
-    });
-  };
-
+  // Load data function
   const loadData = async () => {
     try {
       const a = await db.accounts.toArray();
@@ -121,6 +87,47 @@ export default function AddTransaction() {
       showErrorAlert('Error', 'Failed to load data');
       await logError(e, ERROR_CATEGORIES.DATABASE, ERROR_LEVELS.ERROR, { action: 'loadData' });
     }
+  };
+
+  // Initial load
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  // Listen for data changes (accounts added/edited/deleted)
+  useDataRefresh(() => {
+    loadData();
+  });
+
+  // Reset form when component mounts (to clear any stale data)
+  useEffect(() => {
+    if (!isInitialLoad && accounts.length > 0) {
+      resetForm();
+    }
+    setIsInitialLoad(false);
+  }, [accounts]);
+
+  const resetForm = () => {
+    setFormData({
+      type: 'expense',
+      amount: '',
+      date: new Date().toISOString().split('T')[0],
+      time: new Date().toLocaleTimeString('en-US', {
+        hour12: false,
+        hour: '2-digit',
+        minute: '2-digit'
+      }),
+      accountId: accounts.length > 0 ? accounts[0].id : '',
+      fromAccountId: accounts.length > 0 ? accounts[0].id : '',
+      toAccountId: accounts.length > 1 ? accounts[1].id : (accounts.length > 0 ? accounts[0].id : ''),
+      categoryId: '',
+      status: 'paid',
+      direction: 'owe_me',
+      person: '',
+      title: '',
+      details: '',
+      fee: ''
+    });
   };
 
   const handleTypeChange = (newType) => {
@@ -252,8 +259,7 @@ export default function AddTransaction() {
         // ✅ Clear the form after successful submission
         resetForm();
 
-        // Optional: Stay on same page to add another transaction
-        // If you want to go to dashboard instead, uncomment the line below
+        // Navigate to dashboard
         navigate('/');
       }
     } catch (error) {

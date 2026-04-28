@@ -94,7 +94,12 @@ export default function Settings() {
         const result = await importData(file);
         if (result.success) {
           showSuccessAlert('Import Successful', 'Your data has been imported successfully! The app will now reload.');
-          setTimeout(() => window.location.reload(), 1500);
+          // Clear all caches before reload
+          await clearAllCaches();
+          setTimeout(() => {
+            window.location.href = '/';
+            window.location.reload(true); // Force reload from server
+          }, 1500);
         } else {
           showErrorAlert('Import Failed', result.message);
         }
@@ -102,6 +107,23 @@ export default function Settings() {
         console.error('Import error:', error);
         showErrorAlert('Import Failed', 'There was an error importing your data.');
       }
+    }
+  };
+
+  // Helper function to clear all caches
+  const clearAllCaches = async () => {
+    try {
+      // Clear service worker caches
+      if ('caches' in window) {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map(name => caches.delete(name)));
+      }
+      // Clear localStorage (except maybe some settings)
+      // localStorage.clear();
+      // Clear sessionStorage
+      sessionStorage.clear();
+    } catch (error) {
+      console.error('Error clearing caches:', error);
     }
   };
 
@@ -115,12 +137,23 @@ export default function Settings() {
 
     if (confirmed) {
       try {
+        // Clear all tables
         await db.accounts.clear();
         await db.categories.clear();
         await db.transactions.clear();
+
+        // Re-initialize with sample data
         await initSampleData();
+
+        // Clear caches
+        await clearAllCaches();
+
         showSuccessAlert('Data Cleared', 'All data has been cleared and reset to default. The app will now reload.');
-        setTimeout(() => window.location.reload(), 1500);
+
+        setTimeout(() => {
+          window.location.href = '/';
+          window.location.reload(true); // Force reload from server
+        }, 1500);
       } catch (error) {
         console.error('Clear data error:', error);
         showErrorAlert('Error', 'There was an error clearing your data.');
@@ -138,12 +171,26 @@ export default function Settings() {
 
     if (confirmed) {
       try {
-        // Close database
+        // Close database connection
         await db.close();
+
         // Delete database completely
         await Dexie.delete("ExpenseTrackerDB");
+
+        // Clear all browser caches
+        await clearAllCaches();
+
+        // Clear localStorage items related to the app
+        localStorage.removeItem('expense-tracker-settings');
+        localStorage.removeItem('expense-tracker-theme');
+
         showSuccessAlert('Reset Complete', 'The app will now restart with clean data.');
-        setTimeout(() => window.location.reload(), 1500);
+
+        // Force hard reload with cache clearing
+        setTimeout(() => {
+          window.location.href = '/';
+          window.location.reload(true);
+        }, 1500);
       } catch (error) {
         console.error('Factory reset error:', error);
         showErrorAlert('Reset Failed', 'Please manually clear browser data from DevTools > Application > IndexedDB');
