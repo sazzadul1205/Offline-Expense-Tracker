@@ -7,6 +7,7 @@ import { applyTransaction } from '../utils/accountingRules';
 import { formatCurrency } from '../utils/currency';
 import { showToast, showErrorAlert, showLoadingAlert, closeLoadingAlert } from '../utils/alerts';
 import { logError, ERROR_CATEGORIES, ERROR_LEVELS } from '../utils/errorLogger';
+import { notifyDataChanged } from '../utils/refresh';
 
 import {
   FiArrowDownCircle,
@@ -25,6 +26,7 @@ export default function AddTransaction() {
   const [accounts, setAccounts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   const [formData, setFormData] = useState({
     type: 'expense',
@@ -50,6 +52,37 @@ export default function AddTransaction() {
   useEffect(() => {
     loadData();
   }, []);
+
+  // Reset form when component mounts (to clear any stale data)
+  useEffect(() => {
+    if (!isInitialLoad && accounts.length > 0) {
+      resetForm();
+    }
+    setIsInitialLoad(false);
+  }, [accounts]);
+
+  const resetForm = () => {
+    setFormData({
+      type: 'expense',
+      amount: '',
+      date: new Date().toISOString().split('T')[0],
+      time: new Date().toLocaleTimeString('en-US', {
+        hour12: false,
+        hour: '2-digit',
+        minute: '2-digit'
+      }),
+      accountId: accounts.length > 0 ? accounts[0].id : '',
+      fromAccountId: accounts.length > 0 ? accounts[0].id : '',
+      toAccountId: accounts.length > 1 ? accounts[1].id : (accounts.length > 0 ? accounts[0].id : ''),
+      categoryId: '',
+      status: 'paid',
+      direction: 'owe_me',
+      person: '',
+      title: '',
+      details: '',
+      fee: ''
+    });
+  };
 
   const loadData = async () => {
     try {
@@ -113,31 +146,6 @@ export default function AddTransaction() {
     });
   };
 
-  const resetFormWithFreshData = async () => {
-    const freshAccounts = await db.accounts.toArray();
-    const freshCategories = await db.categories.toArray();
-
-    setAccounts(freshAccounts);
-    setCategories(freshCategories);
-
-    setFormData({
-      type: 'expense',
-      amount: '',
-      date: new Date().toISOString().split('T')[0],
-      time: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
-      accountId: freshAccounts[0]?.id || '',
-      fromAccountId: freshAccounts[0]?.id || '',
-      toAccountId: freshAccounts[1]?.id || (freshAccounts[0]?.id || ''),
-      categoryId: '',
-      status: 'paid',
-      direction: 'owe_me',
-      person: '',
-      title: '',
-      details: '',
-      fee: ''
-    });
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -189,8 +197,6 @@ export default function AddTransaction() {
     }
 
     setIsSubmitting(true);
-
-    // Show full page loading
     showLoadingAlert('Processing Transaction', 'Please wait while we add your transaction...');
 
     try {
@@ -233,28 +239,29 @@ export default function AddTransaction() {
       const transactionId = await db.transactions.add(transaction);
       const result = await applyTransaction({ ...transaction, id: transactionId }, true);
 
+      closeLoadingAlert();
+
       if (!result.success) {
         await db.transactions.delete(transactionId);
-        closeLoadingAlert();
         showErrorAlert('Transaction Failed', result.message);
         await logError(new Error(result.message), ERROR_CATEGORIES.TRANSACTION, ERROR_LEVELS.ERROR, { transaction, result });
-        setIsSubmitting(false);
       } else {
-        // Close loading and show success
-        closeLoadingAlert();
-
-        // Show success message
         await showToast(result.message, 'success');
+        notifyDataChanged();
 
-        // Navigate to dashboard
+        // ✅ Clear the form after successful submission
+        resetForm();
+
+        // Optional: Stay on same page to add another transaction
+        // If you want to go to dashboard instead, uncomment the line below
         navigate('/');
       }
-
     } catch (error) {
       console.error('Transaction error:', error);
       closeLoadingAlert();
-      showErrorAlert('Error', 'Failed to add transaction');
+      showErrorAlert('Error', 'Failed to add transaction: ' + (error.message || 'Unknown error'));
       await logError(error, ERROR_CATEGORIES.TRANSACTION, ERROR_LEVELS.ERROR, { formData });
+    } finally {
       setIsSubmitting(false);
     }
   };

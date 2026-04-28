@@ -1,12 +1,18 @@
 // src/components/DebtTracker.jsx
 
+// React
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+
+// Database
 import { db } from '../db/database';
 
+// Utils
 import { formatCurrency } from '../utils/currency';
+import { useDataRefresh } from '../utils/refresh';
 import { showErrorAlert, showToast, showConfirmAlert } from '../utils/alerts';
 
+// Icons
 import {
   FiUserCheck,
   FiUserX,
@@ -18,19 +24,27 @@ import {
 
 export default function DebtTracker() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [isSettling, setIsSettling] = useState(false);
   const [debts, setDebts] = useState({ oweMe: [], iOwe: [] });
   const [accounts, setAccounts] = useState([]);
 
+  // Refresh when user returns to this page
   useEffect(() => {
     loadDebts();
     loadAccounts();
-  }, []);
+  }, [location.key]);
+
+  // Listen for global data change events
+  useDataRefresh(() => {
+    loadDebts();
+    loadAccounts();
+  });
 
   const loadAccounts = async () => {
-    const accs = await db.accounts.toArray();
-    setAccounts(accs);
+    const acc = await db.accounts.toArray();
+    setAccounts(acc);
   };
 
   const loadDebts = async () => {
@@ -118,15 +132,15 @@ export default function DebtTracker() {
           <div>
             <div className="text-sm text-gray-500">Net Position</div>
             <div className={`text-2xl font-bold mt-1 ${net > 0 ? 'text-emerald-600' :
-                net < 0 ? 'text-rose-600' :
-                  'text-gray-700'
+              net < 0 ? 'text-rose-600' :
+                'text-gray-700'
               }`}>
               {net > 0 ? '+' : ''}{formatCurrency(Math.abs(net))}
             </div>
           </div>
           <div className={`p-3 rounded-full ${net > 0 ? 'bg-emerald-100' :
-              net < 0 ? 'bg-rose-100' :
-                'bg-gray-100'
+            net < 0 ? 'bg-rose-100' :
+              'bg-gray-100'
             }`}>
             {net > 0 ? (
               <FiSmile className="text-emerald-600" />

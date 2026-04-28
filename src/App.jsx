@@ -1,4 +1,4 @@
-// src/App.jsx
+// src/App.jsx - Fixed version
 
 import { useRef } from 'react';
 import {
@@ -58,6 +58,16 @@ function AppContent() {
   // Check if we're on special pages (no slider for these)
   const isSpecialPage = location.pathname === '/settle-debt' || location.pathname === '/edit-transaction';
 
+  // If on special page, render full page without slider container
+  if (isSpecialPage) {
+    if (location.pathname === '/settle-debt') {
+      return <SettleDebt />;
+    }
+    if (location.pathname === '/edit-transaction') {
+      return <EditTransaction />;
+    }
+  }
+
   const currentIndex = Math.max(
     0,
     pages.findIndex(p => p.path === location.pathname)
@@ -95,16 +105,6 @@ function AppContent() {
     delta: 80,
     preventScrollOnSwipe: true
   });
-
-  // If on special page, show different layout without slider
-  if (isSpecialPage) {
-    if (location.pathname === '/settle-debt') {
-      return <SettleDebt />;
-    }
-    if (location.pathname === '/edit-transaction') {
-      return <EditTransaction />;
-    }
-  }
 
   return (
     <div
@@ -251,7 +251,12 @@ function App() {
   }
 
   return (
-    <BrowserRouter>
+    <BrowserRouter
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true,
+      }}
+    >
       <Routes>
         <Route path="/" element={<AppContent />} />
         <Route path="/settle-debt" element={<SettleDebt />} />

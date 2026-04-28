@@ -18,7 +18,9 @@ import {
   FiDollarSign
 } from 'react-icons/fi';
 
+// Utils
 import { formatCurrency } from '../utils/currency';
+import { notifyDataChanged } from '../utils/refresh';
 import { showErrorAlert, showToast, showConfirmAlert } from '../utils/alerts';
 
 export default function Accounts() {
@@ -60,6 +62,8 @@ export default function Accounts() {
     setShowForm(false);
     await loadAccounts();
 
+    await loadAccounts();
+    notifyDataChanged();
     showToast('Account created', 'success');
   };
 
@@ -90,6 +94,7 @@ export default function Accounts() {
 
     await db.accounts.delete(id);
     await loadAccounts();
+    notifyDataChanged();
     showToast('Account removed', 'success');
   };
 

@@ -1,15 +1,19 @@
 import { db } from "../db/database";
+import { APP_VERSION } from "../version";
 
 export async function exportData() {
   const accounts = await db.accounts.toArray();
   const categories = await db.categories.toArray();
   const transactions = await db.transactions.toArray();
+  const errorLogs = await db.errorLogs.toArray(); // optional, but useful for debugging
 
   const backup = {
+    version: APP_VERSION,
+    exportDate: new Date().toISOString(),
     accounts,
     categories,
     transactions,
-    exportDate: new Date().toISOString(),
+    errorLogs,
   };
   const blob = new Blob([JSON.stringify(backup, null, 2)], {
     type: "application/json",
@@ -17,7 +21,9 @@ export async function exportData() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `expense-tracker-backup-${new Date().toISOString().split("T")[0]}.json`;
+  a.download = `expense-tracker-backup-${
+    new Date().toISOString().split("T")[0]
+  }.json`;
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -28,6 +34,9 @@ export async function importData(file) {
     reader.onload = async (e) => {
       try {
         const data = JSON.parse(e.target.result);
+        if (!data.accounts || !data.categories || !data.transactions) {
+          throw new Error("Invalid backup file: missing required tables");
+        }
 
         await db.transaction(
           "rw",
@@ -39,14 +48,19 @@ export async function importData(file) {
             await db.categories.clear();
             await db.transactions.clear();
 
-            if (data.accounts) await db.accounts.bulkAdd(data.accounts);
-            if (data.categories) await db.categories.bulkAdd(data.categories);
-            if (data.transactions)
+            // Use bulkAdd with auto-incremented ids (ignore provided ids to avoid conflicts)
+            if (data.accounts.length) await db.accounts.bulkAdd(data.accounts);
+            if (data.categories.length)
+              await db.categories.bulkAdd(data.categories);
+            if (data.transactions.length)
               await db.transactions.bulkAdd(data.transactions);
           },
         );
 
-        resolve({ success: true, message: "Data imported successfully" });
+        resolve({
+          success: true,
+          message: "Data imported successfully. Reloading...",
+        });
       } catch (error) {
         reject({ success: false, message: error.message });
       }
