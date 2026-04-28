@@ -2,6 +2,255 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ========================================
+   BASE STYLES
+   ======================================== */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  position: fixed;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: linear-gradient(to bottom right, #f9fafb, #f3f4f6);
+  overscroll-behavior-y: none;
+}
+
+#root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* ========================================
+   MOBILE CONTAINER – flex column, full height
+   ======================================== */
+.mobile-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+  background: linear-gradient(to bottom right, #f9fafb, #f3f4f6);
+  position: relative;
+  overflow: hidden;
+}
+
+/* ========================================
+   HEADER – stays at top, no shrink
+   ======================================== */
+header {
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+}
+
+/* ========================================
+   SLIDER CONTAINER – takes remaining space, no scroll
+   ======================================== */
+.slider-container {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ========================================
+   SLIDER TRACK – horizontal flex, full height
+   ======================================== */
+.slider-track {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+  will-change: transform;
+}
+
+/* ========================================
+   SLIDER PAGE – each page handles its own vertical scroll
+   ======================================== */
+.slider-page {
+  flex-shrink: 0;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Page content wrapper */
+.page-content-wrapper {
+  padding: 16px;
+  padding-bottom: 20px;
+}
+
+/* ========================================
+   BOTTOM NAVIGATION - Premium Design
+   ======================================== */
+.bottom-nav {
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+  z-index: 50;
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+  position: relative;
+}
+
+.bottom-nav-container {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 8px 12px;
+  padding-bottom: max(12px, env(safe-area-inset-bottom, 12px));
+  gap: 4px;
+}
+
+/* Navigation Item */
+.nav-item {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 0;
+  position: relative;
+}
+
+.nav-item-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 4px;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+  width: 100%;
+  position: relative;
+}
+
+/* Icon Styling */
+.nav-icon {
+  color: #94a3b8;
+  transition: all 0.2s ease;
+}
+
+.nav-icon.active {
+  color: #3b82f6;
+  transform: translateY(-2px);
+}
+
+/* Label Styling */
+.nav-label {
+  font-size: 10px;
+  font-weight: 500;
+  color: #94a3b8;
+  transition: all 0.2s ease;
+  letter-spacing: 0.3px;
+}
+
+.nav-label.active {
+  color: #3b82f6;
+  font-weight: 600;
+}
+
+/* Active Indicator */
+.nav-indicator {
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 3px;
+  background: linear-gradient(90deg, #3b82f6, #60a5fa);
+  border-radius: 4px;
+  animation: slideUp 0.2s ease;
+}
+
+/* Hover/Tap Effects */
+.nav-item:active .nav-item-content {
+  transform: scale(0.95);
+  background: rgba(59, 130, 246, 0.08);
+}
+
+/* Animation for indicator */
+@keyframes slideUp {
+  from {
+    bottom: -4px;
+    opacity: 0;
+    width: 0;
+  }
+
+  to {
+    bottom: -8px;
+    opacity: 1;
+    width: 20px;
+  }
+}
+
+/* Add Button Special Styling */
+.nav-item:has(.nav-icon[class*="PlusCircle"]) .nav-icon.active {
+  color: #10b981;
+}
+
+.nav-item:has(.nav-icon[class*="PlusCircle"]) .nav-label.active {
+  color: #10b981;
+}
+
+.nav-item:has(.nav-icon[class*="PlusCircle"]) .nav-indicator {
+  background: linear-gradient(90deg, #10b981, #34d399);
+}
+
+/* ========================================
+   SCROLLBAR STYLING
+   ======================================== */
+
+.slider-page::-webkit-scrollbar {
+  width: 4px;
+}
+
+.slider-page::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.slider-page::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+.slider-page::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* ========================================
+   ANIMATIONS
+   ======================================== */
+
 @keyframes slide-down {
   from {
     opacity: 0;
@@ -48,13 +297,12 @@
   animation: spin 1s linear infinite;
 }
 
+/* ========================================
+   UTILITY CLASSES
+   ======================================== */
+
 .safe-top {
   padding-top: env(safe-area-inset-top, 0px);
-}
-
-/* Smooth scrolling */
-html {
-  scroll-behavior: smooth;
 }
 
 /* Better touch targets */
@@ -66,84 +314,38 @@ textarea {
   touch-action: manipulation;
 }
 
-/* Disable pull-to-refresh on overscroll */
-body {
-  overscroll-behavior-y: none;
+/* Fix for modal scrolling */
+.modal-open {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
 }
 
 /* ========================================
-   UNIVERSAL MOBILE SAFE AREA FIX
-   Works on ALL devices: iPhone, Android, tablets
+   RESPONSIVE (Tablet+)
    ======================================== */
 
-/* Safe area bottom variable */
-:root {
-  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
-  --nav-height: 70px;
-}
+@media (min-width: 768px) {
+  .mobile-container {
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    border-radius: 20px;
+  }
 
-/* Fix for bottom navigation on all mobile devices */
-.fixed.bottom-0 {
-  /* Default padding for all devices */
-  padding-bottom: 8px;
-
-  /* For iOS Safari 11.0 - 11.2 */
-  padding-bottom: constant(safe-area-inset-bottom, 8px);
-
-  /* For modern browsers (iOS 11.2+, Android) */
-  padding-bottom: env(safe-area-inset-bottom, 8px);
-}
-
-/* For devices with large gesture areas (iPhone 15, modern Androids) */
-@supports (padding-bottom: max(0px)) {
-  .fixed.bottom-0 {
-    padding-bottom: max(12px, env(safe-area-inset-bottom, 12px));
+  .bottom-nav {
+    border-radius: 0 0 20px 20px;
   }
 }
 
-/* Extra bottom padding for main content to prevent overlap */
-.pb-safe {
-  padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
-}
+/* ========================================
+   ACTIVE NAVIGATION HOVER EFFECTS (Desktop)
+   ======================================== */
 
-/* Only apply extra padding on mobile devices (not tablets/desktops) */
-@media (max-width: 768px) {
-  .pb-safe {
-    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+@media (hover: hover) {
+  .nav-item:hover .nav-icon {
+    color: #60a5fa;
   }
 
-  .fixed.bottom-0 {
-    padding-bottom: max(12px, env(safe-area-inset-bottom, 12px));
+  .nav-item:hover .nav-label {
+    color: #6b7280;
   }
-}
-
-/* Tablets and larger - no extra bottom padding needed */
-@media (min-width: 769px) {
-  .pb-safe {
-    padding-bottom: 20px;
-  }
-
-  .fixed.bottom-0 {
-    padding-bottom: 0px;
-  }
-}
-
-/* Special fix for Android gesture navigation on phones */
-@media (any-pointer: coarse) and (max-height: 900px) {
-  .fixed.bottom-0 {
-    padding-bottom: max(12px, env(safe-area-inset-bottom, 12px));
-  }
-}
-
-/* Background extension for safe area */
-.fixed.bottom-0::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: env(safe-area-inset-bottom, 0px);
-  background: inherit;
-  pointer-events: none;
-  z-index: -1;
 }

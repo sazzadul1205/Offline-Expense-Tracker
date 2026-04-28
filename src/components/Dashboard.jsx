@@ -1,10 +1,11 @@
 // src/components/Dashboard.jsx
 
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { db } from '../db/database';
 
 import { TfiWallet } from "react-icons/tfi";
-import { MdOutlinePendingActions } from 'react-icons/md';
+import { MdOutlinePendingActions, MdEdit, MdDelete } from 'react-icons/md';
 import {
   FiTrendingDown,
   FiTrendingUp,
@@ -13,12 +14,16 @@ import {
   FiArrowUp,
   FiRepeat,
   FiCreditCard,
-  FiClock
+  FiClock,
+  FiMoreVertical
 } from 'react-icons/fi';
 
 import { formatCurrency } from '../utils/currency';
+import { showToast, showErrorAlert, showConfirmAlert } from '../utils/alerts';
+import { deleteTransaction } from '../utils/accountingRules';
 
 export default function Dashboard() {
+  const navigate = useNavigate();
 
   const [stats, setStats] = useState({
     totalBalance: 0,
@@ -27,10 +32,25 @@ export default function Dashboard() {
     pendingDebt: 0,
     recentTransactions: []
   });
+  const [accounts, setAccounts] = useState([]);
+  const [openMenuId, setOpenMenuId] = useState(null);
 
   useEffect(() => {
     loadDashboardData();
+    loadAccounts();
   }, []);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => setOpenMenuId(null);
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
+
+  const loadAccounts = async () => {
+    const accs = await db.accounts.toArray();
+    setAccounts(accs);
+  };
 
   const loadDashboardData = async () => {
     const accounts = await db.accounts.toArray();
@@ -39,7 +59,7 @@ export default function Dashboard() {
     const transactions = await db.transactions
       .orderBy('timestamp')
       .reverse()
-      .limit(20)
+      .limit(50)
       .toArray();
 
     const paid = transactions.filter(t => t.status === 'paid');
@@ -63,8 +83,37 @@ export default function Dashboard() {
       totalExpenses,
       totalIncome,
       pendingDebt,
-      recentTransactions: transactions.slice(0, 10)
+      recentTransactions: transactions.slice(0, 20)
     });
+  };
+
+  // Delete transaction
+  const handleDelete = async (transaction) => {
+    setOpenMenuId(null);
+
+    const confirmed = await showConfirmAlert(
+      'Delete Transaction',
+      `Are you sure you want to delete "${transaction.title || transaction.type}" for ${formatCurrency(transaction.amount)}?`,
+      'Yes, Delete',
+      'Cancel'
+    );
+
+    if (confirmed) {
+      const result = await deleteTransaction(transaction.id);
+      if (result.success) {
+        showToast(result.message, 'success');
+        await loadDashboardData();
+        await loadAccounts();
+      } else {
+        showErrorAlert('Delete Failed', result.message);
+      }
+    }
+  };
+
+  // Edit transaction - navigate to edit page
+  const handleEdit = (transaction) => {
+    setOpenMenuId(null);
+    navigate('/edit-transaction', { state: { transaction } });
   };
 
   const formatDateTime = (date, time) => {
@@ -79,7 +128,8 @@ export default function Dashboard() {
       expense: <FiArrowDown className="text-red-500" size={18} />,
       income: <FiArrowUp className="text-emerald-500" size={18} />,
       transfer: <FiRepeat className="text-blue-500" size={18} />,
-      credit: <FiCreditCard className="text-violet-500" size={18} />
+      credit: <FiCreditCard className="text-violet-500" size={18} />,
+      debt_settlement: <FiRepeat className="text-purple-500" size={18} />
     };
     return map[type] || <FiCreditCard className="text-gray-400" size={18} />;
   };
@@ -89,7 +139,8 @@ export default function Dashboard() {
       expense: 'text-red-600',
       income: 'text-emerald-600',
       transfer: 'text-blue-600',
-      credit: 'text-violet-600'
+      credit: 'text-violet-600',
+      debt_settlement: 'text-purple-600'
     };
     return map[type] || 'text-gray-600';
   };
@@ -105,7 +156,6 @@ export default function Dashboard() {
 
       {/* TOP GRID */}
       <div className="grid grid-cols-2 gap-4">
-
         <div className="rounded-2xl p-4 text-white bg-gradient-to-br from-blue-600 to-indigo-600 shadow-md">
           <div className="flex justify-between items-center">
             <TfiWallet size={20} className="opacity-80" />
@@ -149,7 +199,6 @@ export default function Dashboard() {
           </div>
           <div className="text-xs text-gray-400">Total earned</div>
         </Card>
-
       </div>
 
       {/* SAVINGS */}
@@ -164,12 +213,10 @@ export default function Dashboard() {
                 {(((stats.totalIncome - stats.totalExpenses) / stats.totalIncome) * 100).toFixed(1)}%
               </div>
             </div>
-
             <div className="p-3 rounded-full bg-emerald-100">
               <TfiWallet className="text-emerald-700" size={22} />
             </div>
           </div>
-
           <div className="text-xs text-emerald-600 mt-2">
             Saved {formatCurrency(stats.totalIncome - stats.totalExpenses)} so far
           </div>
@@ -178,25 +225,22 @@ export default function Dashboard() {
 
       {/* TRANSACTIONS */}
       <Card>
-        <div className="px-5 py-4 border-b border-gray-100 flex justify-between">
+        <div className="px-5 py-4 border-b border-gray-100 flex justify-between items-center">
           <h2 className="font-semibold text-gray-800">Recent Activity</h2>
-          <span className="text-xs text-gray-400">Latest 10</span>
+          <span className="text-xs text-gray-400">Latest 20</span>
         </div>
 
-        <div className="divide-y divide-gray-50">
+        <div className="divide-y divide-gray-50 max-h-[400px] overflow-y-auto">
           {stats.recentTransactions.map(t => (
-            <div key={t.id} className="px-5 py-3 flex items-center justify-between hover:bg-gray-50 transition">
-
-              <div className="flex items-center gap-3 min-w-0">
+            <div key={t.id} className="px-5 py-3 flex items-center justify-between hover:bg-gray-50 transition group">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
                 <div className="p-2 rounded-xl bg-gray-50">
                   {getTransactionIcon(t.type)}
                 </div>
-
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <div className="text-sm font-medium text-gray-800 truncate">
                     {t.title || t.type}
                   </div>
-
                   <div className="text-xs text-gray-400 flex items-center gap-1">
                     <FiClock size={10} />
                     {formatDateTime(t.date, t.time)}
@@ -204,11 +248,48 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              <div className={`font-semibold text-sm ${getTransactionColor(t.type)}`}>
+              <div className={`font-semibold text-sm ${getTransactionColor(t.type)} mr-2`}>
                 {t.type === 'expense' ? '-' : t.type === 'income' ? '+' : ''}
                 {formatCurrency(t.amount)}
               </div>
 
+              {/* Action Menu Button */}
+              <div className="relative">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOpenMenuId(openMenuId === t.id ? null : t.id);
+                  }}
+                  className="p-1.5 rounded-full hover:bg-gray-200 transition opacity-0 group-hover:opacity-100"
+                >
+                  <FiMoreVertical size={16} className="text-gray-500" />
+                </button>
+
+                {openMenuId === t.id && (
+                  <div className="absolute right-0 mt-2 w-32 bg-white rounded-xl shadow-lg border border-gray-100 z-20 overflow-hidden">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEdit(t);
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition"
+                    >
+                      <MdEdit size={16} className="text-blue-500" />
+                      Edit
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(t);
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition"
+                    >
+                      <MdDelete size={16} />
+                      Delete
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           ))}
 
@@ -225,7 +306,6 @@ export default function Dashboard() {
           )}
         </div>
       </Card>
-
     </div>
   );
 }

@@ -1,7 +1,7 @@
 // src/version.js
 // Centralized version management - Update this file when releasing new versions
 
-export const APP_VERSION = "1.1.0";
+export const APP_VERSION = "1.2.0";
 
 // Build number (increments with each build, even for same version)
 export const BUILD_NUMBER = "1";
@@ -11,6 +11,16 @@ export const getFullVersion = () => `${APP_VERSION}.${BUILD_NUMBER}`;
 
 // Complete version history with all changes
 export const VERSION_HISTORY = [
+  {
+    version: "1.2.0",
+    date: "2026-04-27",
+    changes: [
+      "Added Slide over navigation for better accessibility",
+      "Fixed the Debt Settlement Modal now different Page",
+      "Added Edit and Delete Functionality in Transaction",
+      "Removed Unused PWA Code",
+    ],
+  },
   {
     version: "1.1.0",
     date: "2026-04-27",
