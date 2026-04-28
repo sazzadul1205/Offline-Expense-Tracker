@@ -6,6 +6,7 @@ import { db } from '../db/database';
 import { formatCurrency } from '../utils/currency';
 import { showToast, showErrorAlert, showConfirmAlert } from '../utils/alerts';
 import { FiArrowLeft, FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
+import { applyTransaction } from '../utils/accountingRules'; // ✅ CHANGED: Static import instead of dynamic
 
 export default function SettleDebt() {
   const navigate = useNavigate();
@@ -80,7 +81,7 @@ export default function SettleDebt() {
         await db.transactions.update(t.id, { status: 'paid' });
       }
 
-      await db.transactions.add({
+      const settlementTransaction = {
         type: 'debt_settlement',
         amount: amount,
         status: 'paid',
@@ -93,19 +94,12 @@ export default function SettleDebt() {
         time: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
         createdAt: new Date().toISOString(),
         details: `Settled ${formatCurrency(amount)} using ${selectedAccount.name}`
-      });
+      };
 
-      const newTxns = await db.transactions
-        .where('person')
-        .equals(person)
-        .filter(t => t.type === 'debt_settlement' && t.status === 'paid')
-        .reverse()
-        .first();
+      const newTxId = await db.transactions.add(settlementTransaction);
 
-      if (newTxns) {
-        const { applyTransaction } = await import('../utils/accountingRules');
-        await applyTransaction(newTxns, true);
-      }
+      // ✅ Now applyTransaction is available statically
+      await applyTransaction({ ...settlementTransaction, id: newTxId }, true);
 
       showToast(`Settled ${formatCurrency(amount)} with ${person}`, 'success');
       navigate('/debt');
@@ -150,8 +144,8 @@ export default function SettleDebt() {
         </div>
 
         <div className={`rounded-2xl p-6 text-white ${isReceiving
-            ? 'bg-gradient-to-r from-emerald-500 to-emerald-600'
-            : 'bg-gradient-to-r from-rose-500 to-rose-600'
+          ? 'bg-gradient-to-r from-emerald-500 to-emerald-600'
+          : 'bg-gradient-to-r from-rose-500 to-rose-600'
           }`}>
           <div className="text-center">
             <p className="text-sm opacity-80 mb-1">Amount to {isReceiving ? 'Receive' : 'Pay'}</p>
@@ -220,8 +214,8 @@ export default function SettleDebt() {
             onClick={handleSettle}
             disabled={isProcessing || !selectedAccountId}
             className={`flex-1 py-3 rounded-xl font-semibold text-white transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${isReceiving
-                ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700'
-                : 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700'
+              ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700'
+              : 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700'
               }`}
           >
             {isProcessing ? (
