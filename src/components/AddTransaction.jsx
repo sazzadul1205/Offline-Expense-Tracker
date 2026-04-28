@@ -189,7 +189,9 @@ export default function AddTransaction() {
     }
 
     setIsSubmitting(true);
-    showLoadingAlert('Processing', 'Adding transaction...');
+
+    // Show full page loading
+    showLoadingAlert('Processing Transaction', 'Please wait while we add your transaction...');
 
     try {
       const timestamp = new Date(`${formData.date}T${formData.time}`).getTime();
@@ -233,25 +235,26 @@ export default function AddTransaction() {
 
       if (!result.success) {
         await db.transactions.delete(transactionId);
+        closeLoadingAlert();
         showErrorAlert('Transaction Failed', result.message);
         await logError(new Error(result.message), ERROR_CATEGORIES.TRANSACTION, ERROR_LEVELS.ERROR, { transaction, result });
+        setIsSubmitting(false);
       } else {
-        showToast(result.message, 'success');
+        // Close loading and show success
+        closeLoadingAlert();
 
-        // Navigate to home page after successful transaction
-        setTimeout(() => {
-          navigate('/');
-        }, 1000);
+        // Show success message
+        await showToast(result.message, 'success');
 
-        await resetFormWithFreshData();
+        // Navigate to dashboard
+        navigate('/');
       }
 
     } catch (error) {
       console.error('Transaction error:', error);
+      closeLoadingAlert();
       showErrorAlert('Error', 'Failed to add transaction');
       await logError(error, ERROR_CATEGORIES.TRANSACTION, ERROR_LEVELS.ERROR, { formData });
-    } finally {
-      closeLoadingAlert();
       setIsSubmitting(false);
     }
   };
