@@ -1,6 +1,6 @@
 {
-  "appId": "com.expensetracker.app",
-  "appName": "Expense Tracker",
+  "appId": "com.yourcompany.expensetracker",
+  "appName": "ExpenseTracker",
   "webDir": "dist",
   "plugins": {
     "SplashScreen": {

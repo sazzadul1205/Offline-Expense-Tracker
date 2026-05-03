@@ -1,7 +1,11 @@
 // src/hooks/useAppInitialization.js
-
 import { useState, useEffect } from "react";
-import { initSampleData, migrateExistingTransactions } from "../db/database";
+import { initSampleData, dexieDB } from "../db/database";
+import {
+  initSQLiteDB,
+  migrateDataToSQLite,
+  shouldUseSQLite,
+} from "../db/sqlite";
 
 export function useAppInitialization() {
   const [isLoading, setIsLoading] = useState(true);
@@ -13,40 +17,32 @@ export function useAppInitialization() {
       try {
         setProgress(10);
 
-        // Simulate progress for better UX
-        const progressInterval = setInterval(() => {
-          setProgress((prev) => {
-            if (prev >= 90) {
-              clearInterval(progressInterval);
-              return 90;
-            }
-            return prev + Math.random() * 10;
-          });
-        }, 200);
-
-        // Minimum loading time for better UX
-        const minLoadTime = new Promise((resolve) => setTimeout(resolve, 1500));
-
-        // Initialize database
+        // First, initialize Dexie (your existing DB) - ALWAYS
         setProgress(30);
-        const dbInit = initSampleData();
+        await initSampleData();
 
-        setProgress(60);
-        const dbMigrate = migrateExistingTransactions();
+        setProgress(50);
 
-        await Promise.all([dbInit, dbMigrate, minLoadTime]);
+        // If on Android, also initialize SQLite and migrate
+        if (window.Capacitor?.isNativePlatform()) {
+          console.log("📱 Android detected, initializing SQLite...");
+          await initSQLiteDB();
+          setProgress(70);
 
-        clearInterval(progressInterval);
+          console.log("🔄 Migrating data to SQLite...");
+          await migrateDataToSQLite();
+          setProgress(90);
+        }
+
         setProgress(100);
 
-        // Small delay to ensure everything is ready
+        // Minimum delay for smooth UX
         setTimeout(() => {
           setIsLoading(false);
-        }, 300);
+        }, 500);
       } catch (err) {
         console.error("App initialization error:", err);
         setError(err.message || "Failed to initialize app");
-        // Still hide loading screen after error
         setTimeout(() => {
           setIsLoading(false);
         }, 1000);

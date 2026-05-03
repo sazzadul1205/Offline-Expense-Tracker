@@ -1,65 +1,150 @@
-import { db } from "../db/database";
-import { APP_VERSION } from "../version";
+// src/utils/backup.js
+import { dexieDB } from "../db/database";
+import {
+  initSQLiteDB,
+  migrateDataToSQLite,
+  shouldUseSQLite,
+  queryAccounts,
+  queryCategories,
+  queryTransactions,
+} from "../db/sqlite";
+import { showToast, showErrorAlert } from "./alerts";
 
+// Check if running on Android
+const isAndroid = () => window.Capacitor?.isNativePlatform() === true;
+
+// Export data (works on both web and Android)
 export async function exportData() {
-  const accounts = await db.accounts.toArray();
-  const categories = await db.categories.toArray();
-  const transactions = await db.transactions.toArray();
-  const errorLogs = await db.errorLogs.toArray(); // optional, but useful for debugging
+  try {
+    let accounts, categories, transactions;
 
-  const backup = {
-    version: APP_VERSION,
-    exportDate: new Date().toISOString(),
-    accounts,
-    categories,
-    transactions,
-    errorLogs,
-  };
-  const blob = new Blob([JSON.stringify(backup, null, 2)], {
-    type: "application/json",
-  });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `expense-tracker-backup-${
-    new Date().toISOString().split("T")[0]
-  }.json`;
-  a.click();
-  URL.revokeObjectURL(url);
+    if (isAndroid() && shouldUseSQLite()) {
+      // Use SQLite for faster export
+      const { getDB } = await import("../db/sqlite");
+      const db = getDB();
+      accounts = (await db.query("SELECT * FROM accounts")).values || [];
+      categories = (await db.query("SELECT * FROM categories")).values || [];
+      transactions =
+        (await db.query("SELECT * FROM transactions")).values || [];
+    } else {
+      // Fallback to Dexie
+      accounts = await dexieDB.accounts.toArray();
+      categories = await dexieDB.categories.toArray();
+      transactions = await dexieDB.transactions.toArray();
+    }
+
+    const backup = {
+      version: "2.0.0",
+      exportDate: new Date().toISOString(),
+      accounts,
+      categories,
+      transactions,
+    };
+
+    const jsonStr = JSON.stringify(backup, null, 2);
+    const blob = new Blob([jsonStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `expense-tracker-backup-${
+      new Date().toISOString().split("T")[0]
+    }.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    showToast("Backup exported successfully!", "success");
+  } catch (error) {
+    console.error("Export error:", error);
+    showErrorAlert("Export Failed", error.message);
+  }
 }
 
+// Import data
 export async function importData(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = async (e) => {
       try {
         const data = JSON.parse(e.target.result);
+
         if (!data.accounts || !data.categories || !data.transactions) {
-          throw new Error("Invalid backup file: missing required tables");
+          throw new Error("Invalid backup file");
         }
 
-        await db.transaction(
-          "rw",
-          db.accounts,
-          db.categories,
-          db.transactions,
-          async () => {
-            await db.accounts.clear();
-            await db.categories.clear();
-            await db.transactions.clear();
+        if (isAndroid() && shouldUseSQLite()) {
+          const { getDB } = await import("../db/sqlite");
+          const db = getDB();
 
-            // Use bulkAdd with auto-incremented ids (ignore provided ids to avoid conflicts)
-            if (data.accounts.length) await db.accounts.bulkAdd(data.accounts);
-            if (data.categories.length)
-              await db.categories.bulkAdd(data.categories);
-            if (data.transactions.length)
-              await db.transactions.bulkAdd(data.transactions);
-          },
-        );
+          await db.execute("BEGIN TRANSACTION");
+          await db.execute("DELETE FROM transactions");
+          await db.execute("DELETE FROM accounts");
+          await db.execute("DELETE FROM categories");
+
+          // Insert accounts
+          for (const acc of data.accounts) {
+            await db.run(
+              `INSERT INTO accounts (id, name, type, balance, currency) VALUES (?, ?, ?, ?, ?)`,
+              [
+                acc.id,
+                acc.name,
+                acc.type,
+                acc.balance || 0,
+                acc.currency || "BDT",
+              ],
+            );
+          }
+
+          // Insert categories
+          for (const cat of data.categories) {
+            await db.run(
+              `INSERT INTO categories (id, name, type) VALUES (?, ?, ?)`,
+              [cat.id, cat.name, cat.type],
+            );
+          }
+
+          // Insert transactions
+          for (const tx of data.transactions) {
+            await db.run(
+              `INSERT INTO transactions (
+                id, date, time, timestamp, type, amount, status, direction, person,
+                accountId, fromAccountId, toAccountId, categoryId, title, details, fee
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              [
+                tx.id,
+                tx.date,
+                tx.time,
+                tx.timestamp,
+                tx.type,
+                tx.amount,
+                tx.status || "paid",
+                tx.direction,
+                tx.person,
+                tx.accountId,
+                tx.fromAccountId,
+                tx.toAccountId,
+                tx.categoryId,
+                tx.title || "",
+                tx.details || "",
+                tx.fee || null,
+              ],
+            );
+          }
+
+          await db.execute("COMMIT");
+        } else {
+          // Dexie fallback
+          await dexieDB.accounts.clear();
+          await dexieDB.categories.clear();
+          await dexieDB.transactions.clear();
+
+          await dexieDB.accounts.bulkAdd(data.accounts);
+          await dexieDB.categories.bulkAdd(data.categories);
+          await dexieDB.transactions.bulkAdd(data.transactions);
+        }
 
         resolve({
           success: true,
-          message: "Data imported successfully. Reloading...",
+          message: "Data imported successfully! Reloading...",
         });
       } catch (error) {
         reject({ success: false, message: error.message });

@@ -31,7 +31,6 @@ import SettleDebt from './components/SettleDebt';
 import EditTransaction from './components/EditTransaction';
 import LoadingScreen from './components/LoadingScreen';
 
-import { useAutoUpdateCheck } from './utils/updateChecker';
 import { useAppInitialization } from './hooks/useAppInitialization';
 import { useSwipeable } from 'react-swipeable';
 
@@ -184,7 +183,6 @@ function AppContent() {
 ------------------------------*/
 function App() {
   const { isLoading, error } = useAppInitialization();
-  useAutoUpdateCheck();
 
   // Show loading screen while initializing
   if (isLoading) {
